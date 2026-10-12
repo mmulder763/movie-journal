@@ -96,3 +96,19 @@ export function StatsIcon(props: IconProps) {
     </Base>
   )
 }
+
+/** Vrienden: twee figuren, de voorste uitgelicht */
+export function FriendsIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      {(accent) => (
+        <>
+          <circle cx="16.5" cy="8" r="2.8" />
+          <path d="M14 19.5c.3-2.9 1.6-4.6 3.6-4.6 2 0 3.1 1.6 3.4 4.6" />
+          <circle cx="9" cy="8.5" r="3.4" {...shape(accent)} />
+          <path d="M3 20c.4-3.6 2.6-5.8 6-5.8s5.6 2.2 6 5.8z" {...shape(accent)} />
+        </>
+      )}
+    </Base>
+  )
+}

@@ -24,10 +24,12 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      # Geen API-keys in de build: die haalt de app na het koppelen uit de privé data-repo
+      # Alleen publieke Supabase-waarden in de build; TMDB/OMDb-keys haalt de app na het inloggen uit de database
       - run: npm run build
         env:
           GITHUB_PAGES: '1'
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

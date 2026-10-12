@@ -39,13 +39,13 @@ function legacyOps(): Op[] {
   }
 }
 
-// Snel opeenvolgende wijzigingen (bv. swipen) bundelen tot één sync, en dus één GitHub-commit
+// Snel opeenvolgende wijzigingen (bv. swipen) bundelen tot één sync, en dus één database-update
 const SYNC_DEBOUNCE_MS = 1200
 // Wijzigingen van andere apparaten ophalen zolang de app open en zichtbaar is
 const POLL_MS = 60_000
 
 /**
- * Het journal, gesynchroniseerd met de backend (dev-server of privé GitHub-repo).
+ * Het journal, gesynchroniseerd met de backend (dev-server of Supabase).
  * Wijzigingen worden direct lokaal toegepast en in een wachtrij gezet; als de backend
  * onbereikbaar is blijven ze bewaard en gaan ze bij de volgende sync alsnog mee.
  */

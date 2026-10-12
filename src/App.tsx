@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Entry } from './types'
 import { exportJournal, parseImport, useJournal, type SyncStatus } from './lib/storage'
 import { summarizeTitles, titleKey } from './lib/titles'
@@ -15,7 +15,12 @@ import { SwipeDeck, type SwipeAction } from './components/SwipeDeck'
 import { Intro } from './components/Intro'
 import { WatchlistView } from './components/WatchlistView'
 import { WatchItemSheet } from './components/WatchItemSheet'
-import { AgendaIcon, ListIcon, StatsIcon, SwipeIcon } from './components/Icons'
+import { AgendaIcon, FriendsIcon, ListIcon, StatsIcon, SwipeIcon } from './components/Icons'
+import { Avatar, FriendsView } from './components/FriendsView'
+import { FriendProfile } from './components/FriendProfile'
+import { AccountSheet } from './components/AccountSheet'
+import { useSocial, type Friend } from './lib/social'
+import type { Profile } from './lib/supabase'
 import { StatsView } from './components/StatsView'
 import { ShareDialog } from './components/ShareDialog'
 import { Ambient } from './components/Ambient'
@@ -24,10 +29,11 @@ import { backdropUrl, fetchCinemaDate, posterUrl } from './lib/tmdb'
 import { formatLongDate } from './lib/dates'
 import type { SearchResult, TitleSummary, WatchItem } from './types'
 
-type Tab = 'agenda' | 'list' | 'swipe' | 'stats'
+type Tab = 'agenda' | 'list' | 'swipe' | 'stats' | 'friends'
 type DialogState = { initial: Entry | null; isNew: boolean } | null
 
-const TABS: [Tab, string, typeof AgendaIcon][] = [
+const FRIENDS_TAB: [Tab, string, typeof AgendaIcon] = ['friends', 'Vrienden', FriendsIcon]
+const BASE_TABS: [Tab, string, typeof AgendaIcon][] = [
   ['agenda', 'Agenda', AgendaIcon],
   ['list', 'Lijst', ListIcon],
   ['swipe', 'Swipe', SwipeIcon],
@@ -36,13 +42,27 @@ const TABS: [Tab, string, typeof AgendaIcon][] = [
 
 interface AppProps {
   backend: Backend
-  onOpenSettings: () => void
+  /** Ingelogde gebruiker (null in lokale development zonder accounts) */
+  me: Profile | null
+  /** Gebruikersnaam uit een uitnodigingslink */
+  invite?: string | null
+  onInviteHandled?: () => void
+  onSignOut?: () => void
 }
 
-export default function App({ backend, onOpenSettings }: AppProps) {
+export default function App({ backend, me, invite, onInviteHandled, onSignOut }: AppProps) {
+  const TABS = me ? [...BASE_TABS, FRIENDS_TAB] : BASE_TABS
+  const social = useSocial(me)
+  const [openFriend, setOpenFriend] = useState<Friend | null>(null)
+  const [account, setAccount] = useState(false)
+  const pendingInvite = invite && me && invite !== me.username ? invite : null
+  // De vriendentab neemt de uitnodiging bij het openen over; daarna niet nog eens tonen
+  useEffect(() => {
+    if (invite) onInviteHandled?.()
+  }, [invite, onInviteHandled])
   const { journal, status, dispatch, sync } = useJournal(backend)
   const { entries } = journal
-  const [tab, setTab] = useState<Tab>('agenda')
+  const [tab, setTab] = useState<Tab>(() => (pendingInvite ? 'friends' : 'agenda'))
   const [selected, setSelected] = useState(today)
   const [view, setView] = useState(() => {
     const d = new Date()
@@ -221,7 +241,11 @@ export default function App({ backend, onOpenSettings }: AppProps) {
         </nav>
         <div className="header-actions">
           <SyncBadge status={status} onRetry={sync} backendLabel={backend.label} />
-          <button className="icon-btn settings-btn" onClick={onOpenSettings} aria-label="Instellingen" title="Opslag & koppeling">⚙︎</button>
+          {me && (
+            <button className="avatar-btn" onClick={() => setAccount(true)} aria-label="Account" title={`@${me.username}`}>
+              <Avatar profile={me} size={34} />
+            </button>
+          )}
           <button className="btn-text hide-mobile" onClick={() => exportJournal(journal)}>Export</button>
           <button className="btn-text hide-mobile" onClick={() => importInput.current?.click()}>Import</button>
           <input ref={importInput} type="file" accept="application/json" hidden
@@ -277,6 +301,10 @@ export default function App({ backend, onOpenSettings }: AppProps) {
           </>
         )}
         {tab === 'stats' && <StatsView entries={entries} />}
+        {tab === 'friends' && me && (
+          <FriendsView me={me} myEntries={entries} social={social} onOpenFriend={setOpenFriend} notify={notify}
+            invite={pendingInvite} />
+        )}
         {tab === 'swipe' && <SwipeDeck journalKeys={journalKeys} skippedKeys={skippedKeys} watchlistKeys={watchlistKeys} onSwipe={handleSwipe} onUndo={handleUndoSwipe} onTopChange={setSwipeTop} />}
       </main>
 
@@ -284,7 +312,8 @@ export default function App({ backend, onOpenSettings }: AppProps) {
         {TABS.map(([value, label, Icon]) => (
           <button key={value} className={tab === value ? 'active' : ''} onClick={() => setTab(value)}>
             <Icon className="tab-icon" />
-            {label}
+            <span className="tab-label">{label}</span>
+            {value === 'friends' && social.incoming.length > 0 && <span className="tab-badge">{social.incoming.length}</span>}
           </button>
         ))}
       </nav>
@@ -292,6 +321,10 @@ export default function App({ backend, onOpenSettings }: AppProps) {
       {openTitleSummary && (
         <TitleSheet
           title={openTitleSummary}
+          friendWatches={social.friends.flatMap((f) => {
+            const watches = f.journal.entries.filter((e) => titleKey(e) === openTitleSummary.key)
+            return watches.length ? [{ friend: f, watches }] : []
+          })}
           onClose={() => setOpenTitle(null)}
           onEdit={(entry) => {
             setOpenTitle(null)
@@ -314,6 +347,24 @@ export default function App({ backend, onOpenSettings }: AppProps) {
             setDialog({ initial: draft, isNew: true })
           }}
         />
+      )}
+
+      {openFriend && (
+        <FriendProfile
+          friend={social.friends.find((f) => f.id === openFriend.id) ?? openFriend}
+          myEntries={entries}
+          watchlistKeys={watchlistKeys}
+          onClose={() => setOpenFriend(null)}
+          onRemove={() => {
+            social.remove(openFriend.id).catch((err) => notify((err as Error).message))
+            setOpenFriend(null)
+          }}
+          onAddToWatchlist={(e) => addToWatchlist({ ...e, backdropPath: e.backdropPath ?? null, overview: '' })}
+        />
+      )}
+
+      {account && me && onSignOut && (
+        <AccountSheet me={me} syncLabel={backend.label} onClose={() => setAccount(false)} onSignOut={onSignOut} />
       )}
 
       {sharingMonth && (

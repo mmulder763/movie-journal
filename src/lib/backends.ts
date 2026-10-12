@@ -1,17 +1,16 @@
 import type { Journal, Op } from '../types'
 import type { ApiKeys } from './keys'
-import { applyOp, emptyJournal, normalizeJournal } from './journal'
+import { applyOp, normalizeJournal } from './journal'
+import { supabase } from './supabase'
 
-/** Waar het journal staat: de lokale dev-server of een privé GitHub-repo. */
+/** Waar het journal staat: de lokale dev-server (development) of Supabase. */
 export interface Backend {
-  kind: 'local' | 'github'
+  kind: 'local' | 'supabase'
   label: string
   load(): Promise<Journal>
   apply(ops: Op[]): Promise<Journal>
-  /** Alleen GitHub: API-keys uit config.json */
+  /** Alleen Supabase: API-keys uit app_config */
   loadKeys?(): Promise<ApiKeys>
-  /** Alleen GitHub: controleert of het token de repo kan zien (gooit met uitleg als dat niet zo is) */
-  checkAccess?(): Promise<void>
 }
 
 // ---------- Lokaal (dev-server, data/journal.json) ----------
@@ -30,142 +29,40 @@ export const localBackend: Backend = {
   apply: async (ops) => normalizeJournal(await localApi('api/ops', { method: 'POST', body: JSON.stringify(ops) })),
 }
 
-// ---------- GitHub (privé data-repo via de Contents API) ----------
+// ---------- Supabase (één journal-document per gebruiker) ----------
 
-export interface GitHubConfig {
-  owner: string
-  repo: string
-  token: string
-}
-
-const GITHUB_KEY = 'movie-journal:github:v1'
-const JOURNAL_PATH = 'journal.json'
-const CONFIG_PATH = 'config.json'
-
-export function loadGitHubConfig(): GitHubConfig | null {
-  try {
-    const raw = localStorage.getItem(GITHUB_KEY)
-    return raw ? (JSON.parse(raw) as GitHubConfig) : null
-  } catch {
-    return null
-  }
-}
-
-export function saveGitHubConfig(config: GitHubConfig | null) {
-  if (config) localStorage.setItem(GITHUB_KEY, JSON.stringify(config))
-  else localStorage.removeItem(GITHUB_KEY)
-}
-
-// UTF-8-veilige base64 (btoa/atob kennen alleen Latin-1)
-function toBase64(text: string) {
-  const bytes = new TextEncoder().encode(text)
-  let binary = ''
-  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
-  return btoa(binary)
-}
-
-const fromBase64 = (b64: string) => new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\n/g, '')), (c) => c.charCodeAt(0)))
-
-class GitHubError extends Error {
-  constructor(message: string, readonly status: number) {
-    super(message)
-  }
-}
-
-export function githubBackend({ owner, repo, token }: GitHubConfig): Backend {
-  const base = `https://api.github.com/repos/${owner}/${repo}/contents/`
-
-  async function gh(path: string, init: RequestInit = {}, accept = 'application/vnd.github+json') {
-    const res = await fetch(base + path, {
-      ...init,
-      cache: 'no-store',
-      headers: { Authorization: `Bearer ${token}`, Accept: accept, 'X-GitHub-Api-Version': '2022-11-28', ...init.headers },
-    })
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}))
-      const hint = res.status === 401 ? ' (token ongeldig of verlopen)' : res.status === 403 ? ' (geen rechten op de repo)' : ''
-      throw new GitHubError(`GitHub ${res.status}: ${body.message ?? res.statusText}${hint}`, res.status)
-    }
-    return res
-  }
-
-  /** Bestand + sha (nodig om te overschrijven), of null als het nog niet bestaat. */
-  async function readFile(path: string): Promise<{ text: string; sha: string } | null> {
-    try {
-      const meta = (await (await gh(path)).json()) as { sha: string; content?: string; size: number }
-      // Boven 1 MB levert de Contents API geen inhoud mee; dan apart als raw ophalen
-      const text = meta.content ? fromBase64(meta.content) : await (await gh(path, {}, 'application/vnd.github.raw+json')).text()
-      return { text, sha: meta.sha }
-    } catch (err) {
-      if (err instanceof GitHubError && err.status === 404) return null
-      throw err
-    }
-  }
-
-  async function readJournal() {
-    const file = await readFile(JOURNAL_PATH)
-    return { journal: file ? normalizeJournal(JSON.parse(file.text)) : emptyJournal(), sha: file?.sha }
+export function supabaseBackend(userId: string, label: string): Backend {
+  async function read() {
+    const { data, error } = await supabase.from('journals').select('data, version').eq('user_id', userId).single()
+    if (error) throw new Error(`Database: ${error.message}`)
+    return { journal: normalizeJournal(data.data), version: data.version as number }
   }
 
   return {
-    kind: 'github',
-    label: `${owner}/${repo}`,
-    load: async () => (await readJournal()).journal,
+    kind: 'supabase',
+    label,
+    load: async () => (await read()).journal,
     async apply(ops) {
-      // Optimistic concurrency: bij een conflict (ander apparaat schreef tussendoor) opnieuw lezen en toepassen
-      for (let attempt = 0; ; attempt++) {
-        const { journal, sha } = await readJournal()
+      // Optimistic concurrency: alleen schrijven als niemand anders tussendoor schreef, anders opnieuw
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const { journal, version } = await read()
         const next = ops.reduce(applyOp, journal)
-        try {
-          await gh(JOURNAL_PATH, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              message: `Journal: ${ops.length} ${ops.length === 1 ? 'wijziging' : 'wijzigingen'}`,
-              content: toBase64(JSON.stringify(next, null, 2) + '\n'),
-              ...(sha ? { sha } : {}),
-            }),
-          })
-          return next
-        } catch (err) {
-          const conflict = err instanceof GitHubError && (err.status === 409 || err.status === 422)
-          if (!conflict || attempt >= 3) throw err
-        }
+        const { data, error } = await supabase
+          .from('journals')
+          .update({ data: next, version: version + 1, updated_at: new Date().toISOString() })
+          .eq('user_id', userId)
+          .eq('version', version)
+          .select('version')
+        if (error) throw new Error(`Database: ${error.message}`)
+        if (data.length === 1) return next
       }
-    },
-    async checkAccess() {
-      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-        cache: 'no-store',
-        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
-      })
-      if (res.status === 401) throw new Error('Token ongeldig of verlopen. Maak een nieuw token aan.')
-      // Bij een privé repo zonder toegang geeft GitHub 404 i.p.v. 403
-      if (res.status === 404) {
-        // Laten zien bij welk account het token hoort: een token van een ander account is de meest voorkomende oorzaak
-        const who = await fetch('https://api.github.com/user', { headers: { Authorization: `Bearer ${token}` } })
-          .then((r) => (r.ok ? (r.json() as Promise<{ login: string }>) : null))
-          .catch(() => null)
-        if (who && who.login.toLowerCase() !== owner.toLowerCase()) {
-          throw new Error(
-            `Dit token hoort bij het account "${who.login}", maar de repo is van "${owner}". Maak het token aan terwijl je als ${owner} bent ingelogd op github.com.`,
-          )
-        }
-        // Welke repo's kan het token wél zien? Dat verraadt een verkeerde resource owner of repo-selectie
-        const visible = await fetch('https://api.github.com/user/repos?per_page=10&sort=updated', { headers: { Authorization: `Bearer ${token}` } })
-          .then((r) => (r.ok ? (r.json() as Promise<{ full_name: string }[]>) : []))
-          .catch(() => [])
-        const seen = visible.length ? ` Het token ziet nu wel: ${visible.map((r) => r.full_name).join(', ')}.` : ' Het token ziet op dit moment geen enkele repo.'
-        throw new Error(
-          `Dit token${who ? ` (account ${who.login})` : ''} heeft geen toegang tot ${owner}/${repo}.${seen} Controleer bij het token: "Resource owner" = ${owner}, "Repository access" → "Only select repositories" → ${repo}, en "Contents: Read and write".`,
-        )
-      }
-      if (!res.ok) throw new Error(`GitHub ${res.status}: ${res.statusText}`)
+      throw new Error('Opslaan mislukt: steeds een conflict met een ander apparaat. Probeer het opnieuw.')
     },
     async loadKeys() {
-      const file = await readFile(CONFIG_PATH)
-      if (!file) return {}
-      const config = JSON.parse(file.text) as { tmdbApiKey?: string; omdbApiKey?: string }
-      return { tmdb: config.tmdbApiKey, omdb: config.omdbApiKey }
+      const { data, error } = await supabase.from('app_config').select('key, value')
+      if (error) throw new Error(`Database: ${error.message}`)
+      const get = (k: string) => data.find((r) => r.key === k)?.value
+      return { tmdb: get('tmdb_api_key'), omdb: get('omdb_api_key') }
     },
   }
 }

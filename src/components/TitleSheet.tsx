@@ -7,6 +7,8 @@ import { StarRating } from './StarRating'
 import { Scores } from './Scores'
 import { TitleInfo } from './TitleInfo'
 import { SeasonProgress } from './EpisodePicker'
+import { Avatar } from './FriendsView'
+import type { Profile } from '../lib/supabase'
 
 interface Props {
   title: TitleSummary
@@ -14,9 +16,11 @@ interface Props {
   onGoToDate: (date: string) => void
   onEdit: (entry: Entry) => void
   onWatchAgain: () => void
+  /** Vrienden die deze titel ook zagen */
+  friendWatches?: { friend: Profile; watches: Entry[] }[]
 }
 
-export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain }: Props) {
+export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, friendWatches = [] }: Props) {
   const times = title.watches.length
   return (
     <Modal title={title.title} onClose={onClose} backdrop={title.backdropPath}>
@@ -48,6 +52,32 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain }:
           <>
             <h4 className="section-label">Voortgang</h4>
             <SeasonProgress tvId={title.tmdbId} history={title.watches} />
+          </>
+        )}
+
+        {friendWatches.length > 0 && (
+          <>
+            <h4 className="section-label">Vrienden die dit zagen</h4>
+            <ul className="friend-watches">
+              {friendWatches.map(({ friend, watches }) => {
+                const rated = watches.filter((w) => w.rating)
+                const avg = rated.length ? Math.round(rated.reduce((n, w) => n + w.rating!, 0) / rated.length) : undefined
+                const note = watches.find((w) => w.note)?.note
+                return (
+                  <li key={friend.id}>
+                    <Avatar profile={friend} size={34} />
+                    <div>
+                      <strong>{friend.display_name}</strong>
+                      <span className="meta-line">
+                        {avg != null ? <StarRating value={avg} /> : <span className="muted small">geen rating</span>}
+                        {watches.length > 1 && <span className="muted small">{watches.length}×</span>}
+                      </span>
+                      {note && <p className="entry-note">“{note}”</p>}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
           </>
         )}
 
