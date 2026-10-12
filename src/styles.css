@@ -420,7 +420,6 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .round-btn:not(:disabled):hover { transform: scale(1.12); }
 .round-btn:not(:disabled):active { transform: scale(0.9); }
 .round-btn:disabled { opacity: 0.35; }
-.round-btn.undo { width: 46px; height: 46px; font-size: 1.2rem; color: var(--muted); }
 .round-btn.skip { color: var(--danger); }
 .round-btn.skip:not(:disabled):hover { box-shadow: 0 0 0 2px var(--danger), 0 0 30px -4px var(--danger); }
 .round-btn.love { width: 52px; height: 52px; font-size: 1.3rem; color: var(--accent); }
@@ -435,8 +434,7 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
   .calendar-header .icon-btn { width: 32px; height: 32px; }
   .round-btn { width: 56px; height: 56px; }
   .round-btn.love { width: 46px; height: 46px; }
-  .round-btn.undo { width: 40px; height: 40px; }
-}
+  }
 
 /* Filmspoel-spinner */
 .reel-spinner {
@@ -757,8 +755,7 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
   .swipe-actions { gap: 7px; }
   .round-btn { width: 52px; height: 52px; }
   .round-btn.watch { width: 48px; height: 48px; }
-  .round-btn.undo { width: 38px; height: 38px; }
-}
+  }
 
 /* Statistieken */
 .stats-view { display: grid; gap: 18px; }

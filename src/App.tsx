@@ -79,7 +79,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   })
   const [dialog, setDialog] = useState<DialogState>(null)
   const [openTitle, setOpenTitle] = useState<string | null>(null)
-  /** titleKey → entry-id van de laatste "gezien"-swipe, voor undo */
+  /** titleKey → entry-id van de laatste "gezien"-swipe (om de bioscoopdatum aan de juiste entry te hangen) */
   const swipedEntries = useRef(new Map<string, string>())
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const notify = useCallback((text: string) => setToast({ id: Date.now(), text }), [])
@@ -108,15 +108,12 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   const [listMode, setListMode] = useState<'seen' | 'watchlist'>('seen')
   const [openWatchItem, setOpenWatchItem] = useState<WatchItem | null>(null)
   const [sharingMonth, setSharingMonth] = useState(false)
-  /** titleKey → watchlist-item dat door een swipe is weggehaald, zodat undo het terugzet */
-  const removedFromWatchlist = useRef(new Map<string, WatchItem>())
 
   /** Gezien = niet meer op de watchlist */
   const leaveWatchlist = useCallback(
     (key: string) => {
       const item = journal.watchlist.find((w) => titleKey(w) === key)
       if (!item) return
-      removedFromWatchlist.current.set(key, item)
       dispatch({ type: 'watchlist-remove', key })
     },
     [journal.watchlist, dispatch],
@@ -195,17 +192,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
     [dispatch, notify, skippedKeys, addToWatchlist, leaveWatchlist],
   )
 
-  const handleUndoSwipe = ({ card, verdict }: SwipeAction) => {
-    const key = titleKey(card)
-    if (verdict === 'skip') return dispatch({ type: 'unskip', key })
-    if (verdict === 'watchlist') return dispatch({ type: 'watchlist-remove', key })
-    const restore = removedFromWatchlist.current.get(key)
-    if (restore) dispatch({ type: 'watchlist-add', item: restore })
-    removedFromWatchlist.current.delete(key)
-    const id = swipedEntries.current.get(key)
-    if (id) dispatch({ type: 'delete', id })
-    swipedEntries.current.delete(key)
-  }
+
 
   return (
     <div className="app">
@@ -305,7 +292,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
           <FriendsView me={me} myEntries={entries} social={social} onOpenFriend={setOpenFriend} notify={notify}
             knownKeys={knownForWatchlist} onAddToWatchlist={addToWatchlist} />
         )}
-        {tab === 'swipe' && <SwipeDeck journalKeys={journalKeys} skippedKeys={skippedKeys} watchlistKeys={watchlistKeys} onSwipe={handleSwipe} onUndo={handleUndoSwipe} onTopChange={setSwipeTop} />}
+        {tab === 'swipe' && <SwipeDeck journalKeys={journalKeys} skippedKeys={skippedKeys} watchlistKeys={watchlistKeys} onSwipe={handleSwipe} onTopChange={setSwipeTop} />}
       </main>
 
       <nav className="tabs tabs-bottom">

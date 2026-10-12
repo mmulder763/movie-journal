@@ -17,14 +17,13 @@ interface Props {
   /** Titels op de watchlist (bij zoeken tonen we ze wél, zodat je ze als gezien kunt markeren) */
   watchlistKeys: Set<string>
   onSwipe: (action: SwipeAction) => void
-  onUndo: (action: SwipeAction) => void
   /** Bovenste kaart, voor de ambient-achtergrond */
   onTopChange?: (card: SearchResult | undefined) => void
 }
 
 const MIN_BUFFER = 5
 
-export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, onUndo, onTopChange }: Props) {
+export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, onTopChange }: Props) {
   const [source, setSource] = useState<DeckSource>('random')
   const [cards, setCards] = useState<SearchResult[]>([])
   /** Hoe vaak achter elkaar er niets nieuws bijkwam; daarna stoppen (lijst op of alles al bekend) */
@@ -33,7 +32,6 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
   const usedPages = useRef(new Set<string>())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [history, setHistory] = useState<SwipeAction[]>([])
   const top = useRef<SwipeCardHandle>(null)
   const generation = useRef(0)
   const [query, setQuery] = useState('')
@@ -108,19 +106,12 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
       if (!card) return
       const action = { card, verdict }
       setCards((prev) => prev.filter((c) => c !== card))
-      setHistory((h) => [action, ...h].slice(0, 20))
       onSwipe(action)
     },
     [visible, onSwipe],
   )
 
-  const undo = () => {
-    const [last, ...rest] = history
-    if (!last) return
-    setHistory(rest)
-    setCards((prev) => [last.card, ...prev])
-    onUndo(last)
-  }
+
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -203,7 +194,6 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
       </div>
 
       <div className="swipe-actions">
-        <button className="round-btn undo" onClick={undo} disabled={history.length === 0} aria-label="Ongedaan maken">↺</button>
         <button className="round-btn skip" onClick={() => top.current?.fly('skip')} disabled={!visible.length} aria-label="Niet gezien">✕</button>
         <button className="round-btn watch" onClick={() => top.current?.fly('watchlist')} disabled={!visible.length}
           aria-label="Op de watchlist" title="Wil ik nog zien">🔖</button>
