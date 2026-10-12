@@ -17,6 +17,9 @@ const cachedKeys = (): ApiKeys | null => {
   }
 }
 
+/** Het account van de opgeslagen sessie bestaat niet meer */
+class AccountGone extends Error {}
+
 /** Uitnodigingslink: ?vriend=gebruikersnaam (bewaard tot na het inloggen) */
 const INVITE_KEY = 'movie-journal:invite'
 function readInvite(): string | null {
@@ -64,8 +67,12 @@ export default function Root() {
     let cancelled = false
     setState({ phase: 'loading' })
     ;(async () => {
-      const { data: me, error } = await supabase.from('profiles').select(PROFILE_FIELDS).eq('id', userId).single()
+      // Bestaat dit account nog? (bv. na een reset) Een opgeslagen sessie blijft anders geldig lijken
+      const { error: userError } = await supabase.auth.getUser()
+      if (userError && userError.status && userError.status >= 400 && userError.status < 500) throw new AccountGone()
+      const { data: me, error } = await supabase.from('profiles').select(PROFILE_FIELDS).eq('id', userId).maybeSingle()
       if (error) throw new Error(error.message)
+      if (!me) throw new AccountGone()
       const backend = supabaseBackend(userId, `@${me.username}`)
       const keys = await backend.loadKeys!()
       setApiKeys(keys)
@@ -73,6 +80,11 @@ export default function Root() {
       if (!cancelled) setState({ phase: 'ready', backend, me })
     })().catch((err) => {
       if (cancelled) return
+      if (err instanceof AccountGone) {
+        // Account verwijderd: lokale sessie en cache weg, terug naar inloggen
+        void signOut()
+        return
+      }
       // Offline: verder met cache als dat kan; de sync-badge laat zien dat er niet gesynchroniseerd wordt
       const keys = cachedKeys()
       if (keys) {
@@ -87,10 +99,12 @@ export default function Root() {
     }
   }, [session, userId])
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
+  async function signOut() {
+    // scope 'local': ook als de server het account/de sessie niet meer kent
+    await supabase.auth.signOut({ scope: 'local' })
     // Lokale cache van dit account weg, zodat een volgende gebruiker op dit apparaat schoon begint
     for (const k of Object.keys(localStorage)) if (k.startsWith('movie-journal:cache') || k.startsWith('movie-journal:pending')) localStorage.removeItem(k)
+    setState({ phase: 'auth' })
   }
 
   if (state.phase === 'auth') return <Auth inviteFrom={invite} />
