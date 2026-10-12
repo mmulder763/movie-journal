@@ -21,7 +21,7 @@ export function AccountSheet({ me, syncLabel, onClose, onSignOut }: Props) {
           </div>
         </div>
         <p className="muted small">
-          Je journal wordt opgeslagen in je account ({syncLabel}). Vrienden die je accepteert kunnen je kijkgeschiedenis, ratings, notities en watchlist zien.
+          Je journal wordt opgeslagen in je account ({syncLabel}). Iedereen met een account in de app kan je kijkgeschiedenis, ratings, notities en watchlist zien.
         </p>
         <button className="btn-ghost" onClick={onSignOut}>Uitloggen</button>
       </div>

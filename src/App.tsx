@@ -302,8 +302,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut }:
         )}
         {tab === 'stats' && <StatsView entries={entries} />}
         {tab === 'friends' && me && (
-          <FriendsView me={me} myEntries={entries} social={social} onOpenFriend={setOpenFriend} notify={notify}
-            invite={pendingInvite} />
+          <FriendsView me={me} myEntries={entries} social={social} onOpenFriend={setOpenFriend} notify={notify} />
         )}
         {tab === 'swipe' && <SwipeDeck journalKeys={journalKeys} skippedKeys={skippedKeys} watchlistKeys={watchlistKeys} onSwipe={handleSwipe} onUndo={handleUndoSwipe} onTopChange={setSwipeTop} />}
       </main>
@@ -313,7 +312,6 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut }:
           <button key={value} className={tab === value ? 'active' : ''} onClick={() => setTab(value)}>
             <Icon className="tab-icon" />
             <span className="tab-label">{label}</span>
-            {value === 'friends' && social.incoming.length > 0 && <span className="tab-badge">{social.incoming.length}</span>}
           </button>
         ))}
       </nav>
@@ -355,10 +353,6 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut }:
           myEntries={entries}
           watchlistKeys={watchlistKeys}
           onClose={() => setOpenFriend(null)}
-          onRemove={() => {
-            social.remove(openFriend.id).catch((err) => notify((err as Error).message))
-            setOpenFriend(null)
-          }}
           onAddToWatchlist={(e) => addToWatchlist({ ...e, backdropPath: e.backdropPath ?? null, overview: '' })}
         />
       )}

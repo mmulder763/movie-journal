@@ -905,11 +905,6 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 .avatar-btn { border-radius: 50%; transition: transform 0.2s var(--spring); }
 .avatar-btn:hover { transform: scale(1.08); }
 .tabs-bottom button { position: relative; }
-.tab-badge {
-  position: absolute; top: 2px; right: 6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
-  background: var(--love); color: #fff; font-size: 0.68rem; font-weight: 800; line-height: 18px; text-align: center;
-  animation: pop-in 0.4s var(--spring);
-}
 @media (max-width: 600px) {
   .tabs-bottom { left: 12px; right: 12px; transform: none; justify-content: space-between; }
   .keyboard-open .tabs-bottom { transform: translateY(20px); }
@@ -922,11 +917,7 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 .me-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
 .me-card > div { display: grid; flex: 1; min-width: 0; }
 .me-card strong { font-family: var(--display); font-size: 1.6rem; font-weight: 400; letter-spacing: 0.03em; line-height: 1; }
-.add-friend { display: flex; gap: 8px; }
-.add-friend .swipe-search { flex: 1; }
 .friend-section { display: grid; gap: 10px; }
-.friend-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(62, 232, 160, 0.08); border: 1px solid rgba(62, 232, 160, 0.25); animation: rise 0.4s var(--ease-out); }
-.friend-name { display: grid; flex: 1; min-width: 0; }
 .friend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .friend-card {
   display: grid; justify-items: center; gap: 4px; padding: 16px 12px; border-radius: var(--radius); text-align: center;

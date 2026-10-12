@@ -44,9 +44,9 @@ export function Auth({ inviteFrom }: { inviteFrom?: string | null }) {
         <img className="setup-logo" src={`${import.meta.env.BASE_URL}icon.svg`} alt="" />
         <h1>Movie <em>Journal</em></h1>
         {inviteFrom ? (
-          <p className="muted"><strong>@{inviteFrom}</strong> nodigt je uit. Maak een account aan om elkaars films te volgen.</p>
+          <p className="muted"><strong>@{inviteFrom}</strong> nodigt je uit. Maak een account aan om elkaars films te zien.</p>
         ) : (
-          <p className="muted">Houd bij wat je kijkt en volg wat je vrienden zien.</p>
+          <p className="muted">Houd bij wat je kijkt en zie wat je vrienden kijken.</p>
         )}
 
         <div className="segmented auth-switch">

@@ -20,44 +20,9 @@ drop policy if exists "profiles: eigen profiel aanpassen" on public.profiles;
 create policy "profiles: eigen profiel aanpassen" on public.profiles
   for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 
--- ---------- Vriendschappen ----------
-create table if not exists public.friendships (
-  requester uuid not null references public.profiles (id) on delete cascade,
-  addressee uuid not null references public.profiles (id) on delete cascade,
-  status text not null default 'pending' check (status in ('pending', 'accepted')),
-  created_at timestamptz not null default now(),
-  primary key (requester, addressee),
-  check (requester <> addressee)
-);
-
-alter table public.friendships enable row level security;
-
-drop policy if exists "friendships: eigen relaties zien" on public.friendships;
-create policy "friendships: eigen relaties zien" on public.friendships
-  for select to authenticated using (auth.uid() in (requester, addressee));
-
-drop policy if exists "friendships: verzoek sturen" on public.friendships;
-create policy "friendships: verzoek sturen" on public.friendships
-  for insert to authenticated with check (requester = auth.uid() and status = 'pending');
-
--- Alleen de ontvanger mag een verzoek accepteren
-drop policy if exists "friendships: verzoek accepteren" on public.friendships;
-create policy "friendships: verzoek accepteren" on public.friendships
-  for update to authenticated using (addressee = auth.uid()) with check (addressee = auth.uid());
-
--- Beide kanten mogen een verzoek intrekken/weigeren of een vriendschap beëindigen
-drop policy if exists "friendships: verwijderen" on public.friendships;
-create policy "friendships: verwijderen" on public.friendships
-  for delete to authenticated using (auth.uid() in (requester, addressee));
-
-create or replace function public.are_friends(a uuid, b uuid)
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists (
-    select 1 from friendships
-    where status = 'accepted'
-      and ((requester = a and addressee = b) or (requester = b and addressee = a))
-  );
-$$;
+-- ---------- Vriendschappen: niet meer nodig, iedereen met een account ziet iedereen ----------
+drop function if exists public.are_friends(uuid, uuid) cascade;
+drop table if exists public.friendships cascade;
 
 -- ---------- Journals (één JSON-document per gebruiker, zelfde vorm als journal.json) ----------
 create table if not exists public.journals (
@@ -70,9 +35,11 @@ create table if not exists public.journals (
 
 alter table public.journals enable row level security;
 
+-- Iedereen met een account ziet alle journals (de app is voor een vriendengroep); schrijven alleen het eigen journal
 drop policy if exists "journals: eigen en van vrienden lezen" on public.journals;
-create policy "journals: eigen en van vrienden lezen" on public.journals
-  for select to authenticated using (user_id = auth.uid() or public.are_friends(auth.uid(), user_id));
+drop policy if exists "journals: lezen als ingelogd" on public.journals;
+create policy "journals: lezen als ingelogd" on public.journals
+  for select to authenticated using (true);
 
 drop policy if exists "journals: eigen journal schrijven" on public.journals;
 create policy "journals: eigen journal schrijven" on public.journals
@@ -119,11 +86,11 @@ $$;
 
 grant execute on function public.username_available(text) to anon, authenticated;
 
--- ---------- Realtime: wijzigingen in vriendschappen en journals live doorgeven (RLS blijft gelden) ----------
+-- ---------- Realtime: wijzigingen in journals en nieuwe profielen live doorgeven (RLS blijft gelden) ----------
 do $$
 begin
-  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'friendships') then
-    alter publication supabase_realtime add table public.friendships;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'profiles') then
+    alter publication supabase_realtime add table public.profiles;
   end if;
   if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'journals') then
     alter publication supabase_realtime add table public.journals;

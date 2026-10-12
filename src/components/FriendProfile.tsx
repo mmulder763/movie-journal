@@ -10,7 +10,6 @@ interface Props {
   friend: Friend
   myEntries: Entry[]
   onClose: () => void
-  onRemove: () => void
   /** Titel van de vriend op je eigen watchlist zetten */
   onAddToWatchlist: (entry: Entry) => void
   watchlistKeys: Set<string>
@@ -19,7 +18,7 @@ interface Props {
 type Tab = 'seen' | 'watchlist' | 'shared'
 
 /** Profiel van een vriend: smaakmatch, posterwand, watchlist en wat jullie allebei zagen. */
-export function FriendProfile({ friend, myEntries, onClose, onRemove, onAddToWatchlist, watchlistKeys }: Props) {
+export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, watchlistKeys }: Props) {
   const [tab, setTab] = useState<Tab>('seen')
   const titles = useMemo(
     () => summarizeTitles(friend.journal.entries).sort((a, b) => compareDatesDesc(a.lastDate, b.lastDate)),
@@ -102,9 +101,6 @@ export function FriendProfile({ friend, myEntries, onClose, onRemove, onAddToWat
           </ul>
         )}
 
-        <button className="btn-text btn-reset" onClick={() => confirm(`Vriendschap met ${friend.display_name} beëindigen?`) && onRemove()}>
-          Vriendschap beëindigen
-        </button>
       </div>
     </Modal>
   )
