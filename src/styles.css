@@ -1204,6 +1204,22 @@ img.avatar { object-fit: cover; padding: 0; }
 .search-suggestions button:active .poster { transform: scale(0.95); }
 .search-suggestions span { font-size: 0.75rem; font-weight: 600; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
+/* Agenda: vrienden */
+.calendar-mode { display: flex; margin: 2px 0 10px; }
+.calendar-mode button { flex: 1; padding: 8px 10px; font-size: 0.85rem; }
+.day-people { position: absolute; z-index: 1; left: 4px; bottom: 4px; display: flex; }
+.day-people .avatar { margin-right: -5px; box-shadow: 0 0 0 1.5px rgba(5, 8, 7, 0.9); font-size: 0.45rem !important; }
+.day-people.dots { left: auto; right: 4px; top: 5px; bottom: auto; }
+.day-people.dots .avatar { margin-right: -4px; font-size: 0 !important; }
+.day:not(.has-entries) .day-people.dots { opacity: 0.9; }
+.remove-title { justify-self: center; margin-top: 8px; }
+.day-friends { padding: 4px 10px 12px; display: grid; gap: 6px; }
+.day-friends .section-label { padding: 0 6px; }
+.day-friends ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.day-friend-item { width: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; text-align: left; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); transition: background 0.15s; }
+.day-friend-item:hover { background: var(--surface-2); }
+.day-friend-item .poster { width: 40px; border-radius: 6px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   body::after { animation: none; }

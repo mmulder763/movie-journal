@@ -16,11 +16,13 @@ interface Props {
   onGoToDate: (date: string) => void
   onEdit: (entry: Entry) => void
   onWatchAgain: () => void
+  /** Alle kijkmomenten van deze titel verwijderen */
+  onRemoveAll: () => void
   /** Vrienden die deze titel ook zagen */
   friendWatches?: { friend: Profile; watches: Entry[] }[]
 }
 
-export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, friendWatches = [] }: Props) {
+export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, onRemoveAll, friendWatches = [] }: Props) {
   const times = title.watches.length
   return (
     <Modal title={title.title} onClose={onClose} backdrop={title.backdropPath}>
@@ -82,6 +84,14 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, f
         )}
 
         <TitleInfo mediaType={title.mediaType} tmdbId={title.tmdbId} title={title.title} />
+
+        <button className="btn-text btn-reset remove-title"
+          onClick={() => {
+            const n = title.watches.length
+            if (confirm(`"${title.title}" uit je lijst verwijderen?${n > 1 ? ` Alle ${n} kijkmomenten verdwijnen ook uit je agenda.` : ' Hij verdwijnt ook uit je agenda.'}`)) onRemoveAll()
+          }}>
+          Verwijderen uit je lijst
+        </button>
 
         <h4 className="section-label">Geschiedenis <span className="muted small">· tik om te bewerken</span></h4>
         <ul className="history">

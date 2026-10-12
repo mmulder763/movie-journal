@@ -4,7 +4,7 @@ import { useJournal, type SyncStatus } from './lib/storage'
 import { summarizeTitles, titleKey } from './lib/titles'
 import { fromISODate, today } from './lib/dates'
 import type { Backend } from './lib/backends'
-import { Calendar } from './components/Calendar'
+import { Calendar, type CalendarMode, type FriendWatch } from './components/Calendar'
 import { DayMenu } from './components/DayMenu'
 import { DayPanel } from './components/DayPanel'
 import { EntryDialog, entryFromResult } from './components/EntryDialog'
@@ -105,6 +105,28 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   }, [entries])
 
   const titles = useMemo(() => summarizeTitles(entries), [entries])
+  // Agenda: wat vrienden op welke dag keken
+  const friendsByDate = useMemo(() => {
+    const map = new Map<string, FriendWatch[]>()
+    for (const friend of social.friends) {
+      for (const entry of friend.journal.entries) {
+        if (entry.date) map.set(entry.date, [...(map.get(entry.date) ?? []), { friend, entry }])
+      }
+    }
+    for (const list of map.values()) list.sort((a, b) => a.entry.createdAt - b.entry.createdAt)
+    return map
+  }, [social.friends])
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>(() => {
+    try {
+      return localStorage.getItem('movie-journal:calendar-mode') === 'all' ? 'all' : 'mine'
+    } catch {
+      return 'mine'
+    }
+  })
+  const changeCalendarMode = (mode: CalendarMode) => {
+    setCalendarMode(mode)
+    try { localStorage.setItem('movie-journal:calendar-mode', mode) } catch { /* privémodus */ }
+  }
   const monthEntries = useMemo(() => {
     const prefix = `${view.year}-${String(view.month + 1).padStart(2, '0')}`
     return entries.filter((e) => e.date?.startsWith(prefix))
@@ -251,6 +273,9 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
                 year={view.year}
                 month={view.month}
                 entriesByDate={entriesByDate}
+                friendsByDate={me ? friendsByDate : undefined}
+                mode={calendarMode}
+                onModeChange={me ? changeCalendarMode : undefined}
                 selected={selected}
                 onSelect={setSelected}
                 onMonthChange={changeMonth}
@@ -259,7 +284,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
                 renderDayMenu={(date, close) => (
                   <DayMenu
                     date={date}
-                    count={entriesByDate.get(date)?.length ?? 0}
+                    count={(entriesByDate.get(date)?.length ?? 0) + (friendsByDate.get(date)?.length ?? 0)}
                     watchlist={journal.watchlist}
                     onAdd={() => {
                       close()
@@ -283,6 +308,8 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
                 entries={entriesByDate.get(selected) ?? []}
                 onAdd={() => setDialog({ initial: null, isNew: true })}
                 onEdit={(entry) => setDialog({ initial: entry, isNew: false })}
+                friendWatches={friendsByDate.get(selected) ?? []}
+                onOpenFriendTitle={({ entry, friend }) => setFriendTitle({ item: { ...entry, addedAt: 0 }, friend })}
               />
             </div>
           </>
@@ -364,6 +391,11 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
           onEdit={(entry) => {
             setOpenTitle(null)
             setDialog({ initial: entry, isNew: false })
+          }}
+          onRemoveAll={() => {
+            for (const w of openTitleSummary.watches) dispatch({ type: 'delete', id: w.id })
+            notify(`🗑 ${openTitleSummary.title} verwijderd`)
+            setOpenTitle(null)
           }}
           onGoToDate={(date) => {
             goToDate(date)

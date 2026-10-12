@@ -2,6 +2,16 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type 
 import type { Entry } from '../types'
 import { WEEKDAYS, formatMonth, monthGrid, toISODate, today } from '../lib/dates'
 import { Poster } from './Poster'
+import { Avatar } from './FriendsView'
+import type { Friend } from '../lib/social'
+
+export type CalendarMode = 'mine' | 'all'
+
+/** Wat een vriend op een dag keek */
+export interface FriendWatch {
+  friend: Friend
+  entry: Entry
+}
 
 interface Props {
   year: number
@@ -14,13 +24,17 @@ interface Props {
   onShare?: () => void
   /** Inhoud van het menuutje dat bij een aangeklikte dag verschijnt */
   renderDayMenu?: (date: string, close: () => void) => ReactNode
+  /** Kijkmomenten van vrienden per datum */
+  friendsByDate?: Map<string, FriendWatch[]>
+  mode?: CalendarMode
+  onModeChange?: (mode: CalendarMode) => void
 }
 
 const MENU_WIDTH = 280
 /** Ongeveer de hoogte van het menu met watchlist-rij, om boven/onder te kiezen */
 const MENU_HEIGHT_ESTIMATE = 230
 
-export function Calendar({ year, month, entriesByDate, selected, onSelect, onMonthChange, onToday, onShare, renderDayMenu }: Props) {
+export function Calendar({ year, month, entriesByDate, selected, onSelect, onMonthChange, onToday, onShare, renderDayMenu, friendsByDate, mode = 'mine', onModeChange }: Props) {
   const todayIso = today()
   const root = useRef<HTMLElement>(null)
   const [menu, setMenu] = useState<{ date: string; top: number; left: number; above: boolean } | null>(null)
@@ -62,7 +76,9 @@ export function Calendar({ year, month, entriesByDate, selected, onSelect, onMon
     })
   }
   const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`
-  const monthCount = [...entriesByDate].reduce((n, [date, list]) => (date.startsWith(monthPrefix) ? n + list.length : n), 0)
+  const countIn = (map: Map<string, unknown[]> | undefined) =>
+    [...(map ?? [])].reduce((n, [date, list]) => (date.startsWith(monthPrefix) ? n + list.length : n), 0)
+  const monthCount = countIn(entriesByDate) + (mode === 'all' ? countIn(friendsByDate) : 0)
 
   // Schuifrichting van de maand-animatie
   const monthIndex = year * 12 + month
@@ -87,6 +103,13 @@ export function Calendar({ year, month, entriesByDate, selected, onSelect, onMon
         )}
       </header>
 
+      {onModeChange && friendsByDate && (
+        <div className="segmented calendar-mode">
+          <button className={mode === 'mine' ? 'active' : ''} onClick={() => onModeChange('mine')}>Mijn agenda</button>
+          <button className={mode === 'all' ? 'active' : ''} onClick={() => onModeChange('all')}>Iedereen</button>
+        </div>
+      )}
+
       <div className="calendar-weekdays">
         {WEEKDAYS.map((d) => (
           <div key={d} className="weekday">{d}</div>
@@ -96,7 +119,14 @@ export function Calendar({ year, month, entriesByDate, selected, onSelect, onMon
       <div className={`calendar-grid ${direction}`} key={monthIndex}>
         {monthGrid(year, month).map((day, i) => {
           const iso = toISODate(day)
-          const dayEntries = entriesByDate.get(iso) ?? []
+          const mine = entriesByDate.get(iso) ?? []
+          const theirs = friendsByDate?.get(iso) ?? []
+          // In "Iedereen" telt alles mee (eigen eerst); anders alleen eigen posters met vrienden als stipjes
+          const dayEntries = mode === 'all' ? [...mine, ...theirs.map((t) => t.entry)] : mine
+          const people = [
+            ...(mode === 'all' && mine.length ? ['me'] : []),
+            ...new Map(theirs.map((t) => [t.friend.id, t.friend])).values(),
+          ]
           const classes = [
             'day',
             day.getMonth() !== month && 'outside',
@@ -114,7 +144,14 @@ export function Calendar({ year, month, entriesByDate, selected, onSelect, onMon
               )}
               <span className="day-number">{day.getDate()}</span>
               {dayEntries.length > 1 && <span className="day-count">+{dayEntries.length - 1}</span>}
-              {dayEntries.some((e) => e.cinema) && <span className="day-cinema" aria-label="Bioscoop">🎟️</span>}
+              {mode === 'mine' && dayEntries.some((e) => e.cinema) && <span className="day-cinema" aria-label="Bioscoop">🎟️</span>}
+              {people.some((p) => p !== 'me') && (
+                <span className={`day-people ${mode === 'mine' ? 'dots' : ''}`} aria-label="Vrienden keken op deze dag">
+                  {people.filter((p): p is Friend => p !== 'me').slice(0, mode === 'mine' ? 2 : 3).map((f) => (
+                    <Avatar key={f.id} profile={f} size={mode === 'mine' ? 12 : 16} />
+                  ))}
+                </span>
+              )}
             </button>
           )
         })}

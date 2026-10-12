@@ -4,15 +4,20 @@ import { formatLongDate, today } from '../lib/dates'
 import { backdropUrl, posterUrl } from '../lib/tmdb'
 import { Poster } from './Poster'
 import { StarRating } from './StarRating'
+import { Avatar } from './FriendsView'
+import type { FriendWatch } from './Calendar'
 
 interface Props {
   date: string
   entries: Entry[]
   onAdd: () => void
   onEdit: (entry: Entry) => void
+  /** Wat vrienden op deze dag keken */
+  friendWatches?: FriendWatch[]
+  onOpenFriendTitle?: (watch: FriendWatch) => void
 }
 
-export function DayPanel({ date, entries, onAdd, onEdit }: Props) {
+export function DayPanel({ date, entries, onAdd, onEdit, friendWatches = [], onOpenFriendTitle }: Props) {
   const hero = entries.find((e) => e.backdropPath) ?? entries[0]
   const heroImg = hero && (backdropUrl(hero.backdropPath) ?? posterUrl(hero.posterPath, 'w500'))
 
@@ -28,7 +33,7 @@ export function DayPanel({ date, entries, onAdd, onEdit }: Props) {
       </header>
 
       {entries.length === 0 ? (
-        <p className="empty">Nog niets gekeken op deze dag.</p>
+        <p className="empty">{friendWatches.length ? 'Jij keek niets op deze dag.' : 'Nog niets gekeken op deze dag.'}</p>
       ) : (
         <ul className="entry-list">
           {entries.map((e, i) => (
@@ -53,6 +58,27 @@ export function DayPanel({ date, entries, onAdd, onEdit }: Props) {
             </li>
           ))}
         </ul>
+      )}
+
+      {friendWatches.length > 0 && (
+        <div className="day-friends">
+          <h4 className="section-label">Vrienden keken</h4>
+          <ul>
+            {friendWatches.map((w, i) => (
+              <li key={`${w.friend.id}-${w.entry.id}`} className="rise" style={{ '--i': i } as CSSProperties}>
+                <button className="day-friend-item" onClick={() => onOpenFriendTitle?.(w)}>
+                  <Poster path={w.entry.posterPath} title={w.entry.title} size="w92" />
+                  <span className="feed-text">
+                    <span className="feed-who"><Avatar profile={w.friend} size={18} /> {w.friend.display_name.split(' ')[0]}</span>
+                    <strong>{w.entry.title}{w.entry.season != null && w.entry.episode != null && <span className="muted"> · S{w.entry.season}E{w.entry.episode}</span>}</strong>
+                    {w.entry.rating != null && <StarRating value={w.entry.rating} />}
+                  </span>
+                  <span className="friend-chevron" aria-hidden>›</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   )
