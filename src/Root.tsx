@@ -4,6 +4,7 @@ import App from './App'
 import { Auth } from './components/Auth'
 import { localBackend, supabaseBackend, type Backend } from './lib/backends'
 import { setApiKeys, type ApiKeys } from './lib/keys'
+import { PROFILE_FIELDS } from './lib/avatar'
 import { supabase, supabaseConfigured, type Profile } from './lib/supabase'
 
 // Keys van de laatste geslaagde sessie, zodat de app ook offline opstart
@@ -63,7 +64,7 @@ export default function Root() {
     let cancelled = false
     setState({ phase: 'loading' })
     ;(async () => {
-      const { data: me, error } = await supabase.from('profiles').select('id, username, display_name').eq('id', userId).single()
+      const { data: me, error } = await supabase.from('profiles').select(PROFILE_FIELDS).eq('id', userId).single()
       if (error) throw new Error(error.message)
       const backend = supabaseBackend(userId, `@${me.username}`)
       const keys = await backend.loadKeys!()
@@ -114,6 +115,7 @@ export default function Root() {
       invite={invite}
       onInviteHandled={() => sessionStorage.removeItem(INVITE_KEY)}
       onSignOut={supabaseConfigured ? signOut : undefined}
+      onProfileUpdated={(me) => setState((st) => (st.phase === 'ready' ? { ...st, me } : st))}
     />
   )
 }

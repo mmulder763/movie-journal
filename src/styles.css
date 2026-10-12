@@ -936,6 +936,17 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 .feed-item:hover { background: var(--surface-2); }
 .feed-text { flex: 1; min-width: 0; display: grid; gap: 4px; font-size: 0.9rem; line-height: 1.35; }
 .feed-item .poster { width: 44px; }
+.feed-row { position: relative; }
+.feed-watch {
+  position: absolute; right: 64px; bottom: 10px; width: 34px; height: 34px; border-radius: 50%; font-size: 0.95rem;
+  display: grid; place-items: center; background: rgba(12, 18, 16, 0.85); border: 1px solid var(--border);
+  transition: transform 0.2s var(--spring), border-color 0.2s;
+}
+.feed-watch:hover { transform: scale(1.12); border-color: var(--tv); }
+.marquee-who { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: 0.85rem; }
+.marquee-who > span:last-child::before { content: '· '; }
+.marquee-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.marquee-actions .marquee-btn { margin-top: 0; }
 
 .friend-profile { display: grid; gap: 14px; }
 .friend-hero { display: flex; align-items: center; gap: 16px; }
@@ -953,6 +964,18 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 .friend-watches li > div { display: grid; gap: 2px; min-width: 0; }
 .account-sheet { display: grid; gap: 14px; }
 .account-sheet .btn-ghost { justify-self: start; }
+img.avatar { object-fit: cover; padding: 0; }
+.avatar-edit { display: flex; align-items: center; gap: 18px; }
+.avatar-upload { position: relative; border-radius: 50%; transition: transform 0.2s var(--spring); }
+.avatar-upload:hover { transform: scale(1.04); }
+.avatar-upload-badge {
+  position: absolute; right: -2px; bottom: -2px; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-text); font-size: 0.9rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+.avatar-edit-actions { display: grid; gap: 4px; justify-items: start; }
+.account-field { display: grid; gap: 6px; font-size: 0.78rem; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.account-name-row { display: flex; gap: 8px; }
+.account-name-row input { text-transform: none; letter-spacing: 0; font-weight: 400; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, type CSSProperties } from 'react'
 import type { Entry } from '../types'
 import type { Profile } from '../lib/supabase'
 import { tasteMatch, type Friend, type SocialState } from '../lib/social'
-import { compareDatesDesc } from '../lib/titles'
+import { compareDatesDesc, titleKey } from '../lib/titles'
 import { Poster } from './Poster'
 import { StarRating } from './StarRating'
 
@@ -12,6 +12,9 @@ interface Props {
   social: SocialState
   onOpenFriend: (friend: Friend) => void
   notify: (text: string) => void
+  /** Al gezien of al op je watchlist */
+  knownKeys: Set<string>
+  onAddToWatchlist: (entry: Entry) => void
 }
 
 const relative = (iso: string) => {
@@ -25,7 +28,10 @@ const relative = (iso: string) => {
 const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
 export function Avatar({ profile, size = 40 }: { profile: Profile; size?: number }) {
-  // Vaste kleur per gebruiker, afgeleid van de gebruikersnaam
+  if (profile.avatar_url) {
+    return <img className="avatar" src={profile.avatar_url} alt="" style={{ width: size, height: size }} loading="lazy" />
+  }
+  // Zonder foto: initialen op een vaste kleur per gebruiker, afgeleid van de gebruikersnaam
   const hue = [...profile.username].reduce((n, c) => n + c.charCodeAt(0), 0) % 360
   return (
     <span className="avatar" style={{ width: size, height: size, fontSize: size * 0.38, '--hue': hue } as CSSProperties}>
@@ -34,7 +40,7 @@ export function Avatar({ profile, size = 40 }: { profile: Profile; size?: number
   )
 }
 
-export function FriendsView({ me, myEntries, social, onOpenFriend, notify }: Props) {
+export function FriendsView({ me, myEntries, social, onOpenFriend, notify, knownKeys, onAddToWatchlist }: Props) {
   const inviteLink = `${location.origin}${import.meta.env.BASE_URL}?vriend=${me.username}`
 
   // Bij openen van de tab altijd verse stand ophalen
@@ -108,7 +114,7 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, notify }: Pro
           <h4 className="section-label">Recent bij vrienden</h4>
           <ul className="feed">
             {feed.map(({ friend, entry }, i) => (
-              <li key={`${friend.id}-${entry.id}`} className="rise" style={{ '--i': Math.min(i, 15) } as CSSProperties}>
+              <li key={`${friend.id}-${entry.id}`} className="rise feed-row" style={{ '--i': Math.min(i, 15) } as CSSProperties}>
                 <button className="feed-item" onClick={() => onOpenFriend(friend)}>
                   <Avatar profile={friend} size={34} />
                   <div className="feed-text">
@@ -123,6 +129,11 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, notify }: Pro
                   </div>
                   <Poster path={entry.posterPath} title={entry.title} size="w92" />
                 </button>
+                {!knownKeys.has(titleKey(entry)) && (
+                  <button className="feed-watch" onClick={() => onAddToWatchlist(entry)} aria-label={`${entry.title} op je watchlist`} title="Op mijn watchlist">
+                    🔖
+                  </button>
+                )}
               </li>
             ))}
           </ul>

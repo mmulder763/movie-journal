@@ -10,7 +10,7 @@ import { DayPanel } from './components/DayPanel'
 import { EntryDialog, entryFromResult } from './components/EntryDialog'
 import { ListView } from './components/ListView'
 import { TitleSheet } from './components/TitleSheet'
-import { NowShowing } from './components/NowShowing'
+import { NowShowing, type MarqueeSlide } from './components/NowShowing'
 import { SwipeDeck, type SwipeAction } from './components/SwipeDeck'
 import { Intro } from './components/Intro'
 import { WatchlistView } from './components/WatchlistView'
@@ -27,10 +27,13 @@ import { Ambient } from './components/Ambient'
 import { Toast, type ToastMessage } from './components/Toast'
 import { backdropUrl, fetchCinemaDate, posterUrl } from './lib/tmdb'
 import { formatLongDate } from './lib/dates'
-import type { SearchResult, TitleSummary, WatchItem } from './types'
+import type { SearchResult, WatchItem } from './types'
 
 type Tab = 'agenda' | 'list' | 'swipe' | 'stats' | 'friends'
 type DialogState = { initial: Entry | null; isNew: boolean } | null
+
+/** Minimale titelgegevens om iets op de watchlist te zetten (zoekresultaat, swipe-kaart, titel van een vriend) */
+type WatchSource = Pick<SearchResult, 'tmdbId' | 'mediaType' | 'title' | 'posterPath' | 'year'> & { backdropPath?: string | null }
 
 const FRIENDS_TAB: [Tab, string, typeof AgendaIcon] = ['friends', 'Vrienden', FriendsIcon]
 const BASE_TABS: [Tab, string, typeof AgendaIcon][] = [
@@ -48,9 +51,10 @@ interface AppProps {
   invite?: string | null
   onInviteHandled?: () => void
   onSignOut?: () => void
+  onProfileUpdated?: (profile: Profile) => void
 }
 
-export default function App({ backend, me, invite, onInviteHandled, onSignOut }: AppProps) {
+export default function App({ backend, me, invite, onInviteHandled, onSignOut, onProfileUpdated }: AppProps) {
   const TABS = me ? [...BASE_TABS, FRIENDS_TAB] : BASE_TABS
   const social = useSocial(me)
   const [openFriend, setOpenFriend] = useState<Friend | null>(null)
@@ -76,7 +80,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut }:
   const [toast, setToast] = useState<ToastMessage | null>(null)
   const notify = useCallback((text: string) => setToast({ id: Date.now(), text }), [])
   const clearToast = useCallback(() => setToast(null), [])
-  const [marqueeTitle, setMarqueeTitle] = useState<TitleSummary>()
+  const [marqueeTitle, setMarqueeTitle] = useState<MarqueeSlide>()
   const [swipeTop, setSwipeTop] = useState<SearchResult>()
 
   const entriesByDate = useMemo(() => {
@@ -95,6 +99,8 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut }:
   const journalKeys = useMemo(() => new Set(entries.map(titleKey)), [entries])
   const skippedKeys = useMemo(() => new Set(journal.skipped), [journal.skipped])
   const watchlistKeys = useMemo(() => new Set(journal.watchlist.map(titleKey)), [journal.watchlist])
+  /** Al gezien of al op de watchlist: dan geen "+ Watchlist"-knop tonen */
+  const knownForWatchlist = useMemo(() => new Set([...journalKeys, ...watchlistKeys]), [journalKeys, watchlistKeys])
   const [listMode, setListMode] = useState<'seen' | 'watchlist'>('seen')
   const [openWatchItem, setOpenWatchItem] = useState<WatchItem | null>(null)
   const [sharingMonth, setSharingMonth] = useState(false)
@@ -113,10 +119,10 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut }:
   )
 
   const addToWatchlist = useCallback(
-    (r: SearchResult) => {
+    (r: WatchSource) => {
       dispatch({
         type: 'watchlist-add',
-        item: { tmdbId: r.tmdbId, mediaType: r.mediaType, title: r.title, posterPath: r.posterPath, backdropPath: r.backdropPath, year: r.year, addedAt: Date.now() },
+        item: { tmdbId: r.tmdbId, mediaType: r.mediaType, title: r.title, posterPath: r.posterPath, backdropPath: r.backdropPath ?? null, year: r.year, addedAt: Date.now() },
       })
       notify(`🔖 ${r.title} op je watchlist`)
     },
@@ -256,8 +262,9 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut }:
       <main className="tab-page" key={tab}>
         {tab === 'agenda' && (
           <>
-            <NowShowing titles={titles} onOpen={setOpenTitle} onAdd={() => setDialog({ initial: null, isNew: true })}
-              onSlideChange={setMarqueeTitle} />
+            <NowShowing titles={titles} friends={social.friends} knownKeys={knownForWatchlist}
+              onOpen={setOpenTitle} onOpenFriend={setOpenFriend} onAddToWatchlist={addToWatchlist}
+              onAdd={() => setDialog({ initial: null, isNew: true })} onSlideChange={setMarqueeTitle} />
             <div className="layout">
               <Calendar
                 year={view.year}
@@ -302,7 +309,8 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut }:
         )}
         {tab === 'stats' && <StatsView entries={entries} />}
         {tab === 'friends' && me && (
-          <FriendsView me={me} myEntries={entries} social={social} onOpenFriend={setOpenFriend} notify={notify} />
+          <FriendsView me={me} myEntries={entries} social={social} onOpenFriend={setOpenFriend} notify={notify}
+            knownKeys={knownForWatchlist} onAddToWatchlist={addToWatchlist} />
         )}
         {tab === 'swipe' && <SwipeDeck journalKeys={journalKeys} skippedKeys={skippedKeys} watchlistKeys={watchlistKeys} onSwipe={handleSwipe} onUndo={handleUndoSwipe} onTopChange={setSwipeTop} />}
       </main>
@@ -351,14 +359,15 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut }:
         <FriendProfile
           friend={social.friends.find((f) => f.id === openFriend.id) ?? openFriend}
           myEntries={entries}
-          watchlistKeys={watchlistKeys}
+          knownKeys={knownForWatchlist}
           onClose={() => setOpenFriend(null)}
-          onAddToWatchlist={(e) => addToWatchlist({ ...e, backdropPath: e.backdropPath ?? null, overview: '' })}
+          onAddToWatchlist={addToWatchlist}
         />
       )}
 
       {account && me && onSignOut && (
-        <AccountSheet me={me} syncLabel={backend.label} onClose={() => setAccount(false)} onSignOut={onSignOut} />
+        <AccountSheet me={me} syncLabel={backend.label} onClose={() => setAccount(false)} onSignOut={onSignOut}
+          onProfileUpdated={(p) => onProfileUpdated?.(p)} />
       )}
 
       {sharingMonth && (

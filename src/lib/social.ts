@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Entry, Journal } from '../types'
 import { normalizeJournal } from './journal'
+import { PROFILE_FIELDS } from './avatar'
 import { supabase, type Profile } from './supabase'
 import { titleKey } from './titles'
 
@@ -29,7 +30,7 @@ export function useSocial(me: Profile | null): SocialState {
     if (!me) return
     try {
       const [{ data: profiles, error: e1 }, { data: journals, error: e2 }] = await Promise.all([
-        supabase.from('profiles').select('id, username, display_name').neq('id', me.id),
+        supabase.from('profiles').select(PROFILE_FIELDS).neq('id', me.id),
         supabase.from('journals').select('user_id, data, updated_at').neq('user_id', me.id),
       ])
       if (e1) throw e1
@@ -65,7 +66,8 @@ export function useSocial(me: Profile | null): SocialState {
     // Realtime: nieuwe gebruikers en wijzigingen in andermans journal direct binnenhalen
     const channel = supabase
       .channel('social')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, () => void refresh())
+      // Nieuwe gebruikers en gewijzigde namen/foto's
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => void refresh())
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'journals' }, (payload) => {
         if ((payload.new as { user_id?: string }).user_id !== me?.id) void refresh()
       })

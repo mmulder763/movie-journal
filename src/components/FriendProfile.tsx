@@ -11,14 +11,15 @@ interface Props {
   myEntries: Entry[]
   onClose: () => void
   /** Titel van de vriend op je eigen watchlist zetten */
-  onAddToWatchlist: (entry: Entry) => void
-  watchlistKeys: Set<string>
+  onAddToWatchlist: (title: { tmdbId: number; mediaType: Entry['mediaType']; title: string; posterPath: string | null; backdropPath?: string | null; year?: string }) => void
+  /** Al gezien of al op je watchlist */
+  knownKeys: Set<string>
 }
 
 type Tab = 'seen' | 'watchlist' | 'shared'
 
 /** Profiel van een vriend: smaakmatch, posterwand, watchlist en wat jullie allebei zagen. */
-export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, watchlistKeys }: Props) {
+export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, knownKeys }: Props) {
   const [tab, setTab] = useState<Tab>('seen')
   const titles = useMemo(
     () => summarizeTitles(friend.journal.entries).sort((a, b) => compareDatesDesc(a.lastDate, b.lastDate)),
@@ -66,14 +67,14 @@ export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, wa
           friend.journal.watchlist.length === 0 ? <p className="empty">Lege watchlist.</p> : (
             <ul className="poster-wall compact">
               {friend.journal.watchlist.map((w, i) => {
-                const onMine = watchlistKeys.has(titleKey(w)) || mine.has(titleKey(w))
+                const onMine = knownKeys.has(titleKey(w))
                 return (
                   <li key={titleKey(w)} className="rise" style={{ '--i': Math.min(i, 20) } as CSSProperties}>
                     <div className="wall-item">
                       <div className="wall-poster"><Poster path={w.posterPath} title={w.title} size="w342" /></div>
                       <span className="wall-title">{w.title}</span>
                       <button className="btn-text small-btn" disabled={onMine}
-                        onClick={() => onAddToWatchlist({ ...w, id: '', date: null, createdAt: Date.now() })}>
+                        onClick={() => onAddToWatchlist(w)}>
                         {onMine ? '✓ Bij jou' : '+ Mijn watchlist'}
                       </button>
                     </div>
@@ -95,6 +96,11 @@ export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, wa
                   </div>
                   <span className="wall-title">{t.title}</span>
                   <span className="muted small">{t.mediaType === 'tv' ? 'Serie' : 'Film'}{t.year && ` · ${t.year}`}</span>
+                  {tab === 'seen' && (
+                    <button className="btn-text small-btn" disabled={knownKeys.has(t.key)} onClick={() => onAddToWatchlist(t)}>
+                      {mine.has(t.key) ? '✓ Gezien' : knownKeys.has(t.key) ? '✓ Op watchlist' : '+ Mijn watchlist'}
+                    </button>
+                  )}
                 </div>
               </li>
             ))}
