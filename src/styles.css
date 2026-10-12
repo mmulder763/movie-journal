@@ -68,7 +68,7 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .error { color: var(--danger); }
 .empty { color: var(--muted); text-align: center; padding: 32px 16px; margin: 0; }
 .eyebrow { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: var(--accent); }
-.section-label { font-family: var(--display); font-size: 1.2rem; letter-spacing: 0.06em; color: var(--muted); margin: 8px 0 0; }
+.section-label { font-family: var(--display); font-size: 1.2rem; letter-spacing: 0.06em; color: var(--movie); margin: 8px 0 0; }
 
 /* Buttons */
 .btn-primary {
@@ -853,6 +853,7 @@ button.wall-poster { display: block; width: 100%; padding: 0; }
 .setup-help summary { cursor: pointer; color: var(--accent); }
 .setup-help ol { padding-left: 18px; line-height: 1.6; }
 .setup-help a { color: var(--text); }
+.person-chips .chip { display: inline-flex; align-items: center; gap: 6px; padding-left: 5px; }
 .settings-btn { font-size: 1.1rem; color: var(--muted); }
 .auth-features { list-style: none; margin: 0; padding: 12px 14px; display: grid; gap: 8px; border-radius: 14px; background: rgba(62, 232, 160, 0.06); border: 1px solid rgba(62, 232, 160, 0.18); }
 .auth-features li { display: flex; gap: 10px; font-size: 0.86rem; line-height: 1.35; animation: rise 0.4s var(--ease-out) both; }
@@ -1047,7 +1048,11 @@ img.avatar { object-fit: cover; padding: 0; }
 
 /* Laatst gekeken: brede backdrop-kaarten */
 .recent-strip { display: grid; gap: 8px; }
-.recent-strip ul { list-style: none; margin: 0 -16px; padding: 2px 16px 8px; display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.recent-strip ul {
+  list-style: none; display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+  /* Tot de schermrand, met ruimte voor de schaduw; scroll-padding zodat snappen niet tegen de rand plakt */
+  margin: 0 -16px -22px; padding: 4px 16px 26px; scroll-padding-inline: 16px;
+}
 .recent-strip li { flex: 0 0 min(72%, 300px); scroll-snap-align: start; animation: rise 0.5s var(--ease-out) both; animation-delay: calc(var(--i) * 50ms); }
 .recent-card {
   position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; text-align: left;
@@ -1147,7 +1152,7 @@ img.avatar { object-fit: cover; padding: 0; }
 .profile-tiles span { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .profile-tabs { display: flex; }
 .profile-tabs button { flex: 1; padding: 9px 6px; font-size: 0.85rem; }
-.friend-profile .recent-strip ul { margin: 0 -18px; padding: 2px 18px 8px; scroll-padding-inline: 18px; }
+.friend-profile .recent-strip ul { margin: 0 -18px -22px; padding: 4px 18px 26px; scroll-padding-inline: 18px; }
 .friend-profile .recent-strip li { flex-basis: min(64%, 260px); }
 
 /* Groepsstatistieken */

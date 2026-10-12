@@ -9,6 +9,7 @@ import { fromISODate } from '../lib/dates'
 import { BarList, ColumnChart, Legend } from './Charts'
 import { ShareDialog } from './ShareDialog'
 import { GroupStats } from './GroupStats'
+import { Avatar } from './FriendsView'
 import type { Profile } from '../lib/supabase'
 import type { Friend } from '../lib/social'
 import type { WatchItem } from '../types'
@@ -28,7 +29,12 @@ interface Props {
   onOpenTitle?: (item: WatchItem) => void
 }
 
-export function StatsView({ entries, me, friends = [], onOpenTitle }: Props) {
+export function StatsView({ entries: myEntries, me, friends = [], onOpenTitle }: Props) {
+  // Wiens statistieken: jijzelf ('me') of een vriend (profiel-id)
+  const [person, setPerson] = useState<string>('me')
+  const selectedFriend = friends.find((f) => f.id === person)
+  const entries = selectedFriend ? selectedFriend.journal.entries : myEntries
+  const isMine = !selectedFriend
   const years = useMemo(
     () => [...new Set(entries.flatMap((e) => (e.date ? [e.date.slice(0, 4)] : [])))].sort().reverse(),
     [entries],
@@ -107,6 +113,19 @@ export function StatsView({ entries, me, friends = [], onOpenTitle }: Props) {
 
   return (
     <section className="stats-view">
+      {me && friends.length > 0 && (
+        <div className="chips person-chips">
+          <button className={`chip ${isMine ? 'active' : ''}`} onClick={() => setPerson('me')}>
+            <Avatar profile={me} size={22} /> Jij
+          </button>
+          {friends.map((f) => (
+            <button key={f.id} className={`chip ${person === f.id ? 'active' : ''}`} onClick={() => setPerson(f.id)}>
+              <Avatar profile={f} size={22} /> {f.display_name.split(' ')[0]}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="stats-top">
         <div className="chips">
           {years.map((y) => (
@@ -114,7 +133,7 @@ export function StatsView({ entries, me, friends = [], onOpenTitle }: Props) {
           ))}
           <button className={`chip ${activePeriod === 'all' ? 'active' : ''}`} onClick={() => setPeriod('all')}>Alles</button>
         </div>
-        <button className="btn-primary" onClick={() => setSharing(true)} disabled={scoped.length === 0}>↗ Deel</button>
+        {isMine && <button className="btn-primary" onClick={() => setSharing(true)} disabled={scoped.length === 0}>↗ Deel</button>}
       </div>
 
       {scoped.length === 0 ? (
@@ -161,7 +180,7 @@ export function StatsView({ entries, me, friends = [], onOpenTitle }: Props) {
               {creators.length ? <BarList rows={creators} caption="Titels per regisseur of maker" color={SERIE} /> : <Loading loaded={metaLoaded} total={titles.length} />}
             </article>
 
-            {me && friends.length > 0 && onOpenTitle && (
+            {isMine && me && friends.length > 0 && onOpenTitle && (
               <GroupStats me={me} myEntries={entries} friends={friends} period={activePeriod} onOpenTitle={onOpenTitle} />
             )}
 
