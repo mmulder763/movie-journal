@@ -6,6 +6,7 @@ import { Poster } from './Poster'
 import { StarRating } from './StarRating'
 import { Scores } from './Scores'
 import { TitleInfo } from './TitleInfo'
+import { SeasonProgress } from './EpisodePicker'
 
 interface Props {
   title: TitleSummary
@@ -25,7 +26,11 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain }:
           <div className="title-meta">
             <span className={`badge badge-${title.mediaType}`}>{title.mediaType === 'tv' ? 'Serie' : 'Film'}</span>
             {title.year && <span className="muted">{title.year}</span>}
-            <span className="muted">{times}× gekeken</span>
+            <span className="muted">
+              {title.mediaType === 'tv' && title.watches.some((w) => w.episode != null)
+                ? `${title.watches.filter((w) => w.episode != null).length} afleveringen gezien`
+                : `${times}× gekeken`}
+            </span>
             {title.avgRating != null && (
               <span className="rating-line">
                 <StarRating value={Math.round(title.avgRating)} />
@@ -38,6 +43,13 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain }:
             </button>
           </div>
         </div>
+
+        {title.mediaType === 'tv' && (
+          <>
+            <h4 className="section-label">Voortgang</h4>
+            <SeasonProgress tvId={title.tmdbId} history={title.watches} />
+          </>
+        )}
 
         <TitleInfo mediaType={title.mediaType} tmdbId={title.tmdbId} title={title.title} />
 

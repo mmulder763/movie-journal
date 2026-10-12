@@ -744,8 +744,8 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 .stats-view { display: grid; gap: 18px; }
 .stats-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .stats-top .chips { flex: 1; min-width: 0; }
-.stat-tiles { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
-@media (max-width: 900px) { .stat-tiles { grid-template-columns: repeat(3, 1fr); } }
+.stat-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 900px) { .stat-tiles { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 520px) { .stat-tiles { grid-template-columns: repeat(2, 1fr); } }
 .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
 @media (max-width: 760px) { .stats-grid { grid-template-columns: 1fr; } }
@@ -860,6 +860,39 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
   35% { opacity: 0.95; transform: translateX(calc(var(--x) * 0.6)) scaleY(1) scaleX(1); }
   100% { opacity: 0; transform: translateX(calc(var(--x) * 4)) scaleY(1.2) scaleX(3); }
 }
+
+/* Afleveringen kiezen */
+.episode-picker { display: grid; gap: 10px; text-transform: none; letter-spacing: 0; font-weight: 400; }
+.season-chips { flex-wrap: nowrap; }
+.episode-tools { display: flex; align-items: center; justify-content: space-between; }
+.episode-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 300px; overflow-y: auto; overscroll-behavior: contain; }
+.episode-list li { animation: rise 0.35s var(--ease-out) both; animation-delay: calc(var(--i) * 25ms); }
+.episode {
+  width: 100%; display: grid; grid-template-columns: 22px auto 1fr auto; align-items: center; gap: 10px; text-align: left;
+  padding: 9px 10px; border-radius: 10px; border: 1px solid transparent; color: var(--text); font-size: 0.88rem;
+  background: rgba(255, 255, 255, 0.04); transition: background 0.15s, border-color 0.15s;
+}
+.episode:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+.episode:disabled { opacity: 0.4; }
+.episode.selected { border-color: rgba(62, 232, 160, 0.6); background: rgba(62, 232, 160, 0.12); }
+.episode-check {
+  width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--muted); display: grid; place-items: center;
+  font-size: 0.75rem; font-weight: 900; color: var(--accent-text); transition: all 0.2s var(--spring);
+}
+.episode.selected .episode-check { background: var(--accent); border-color: var(--accent); transform: scale(1.1); }
+.episode-num { font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.episode-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.episode-meta { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+.episode.seen .episode-meta { color: var(--accent); }
+.episode-skeleton { height: 40px; border-radius: 10px; background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.1), rgba(255,255,255,0.04)) 0 0 / 200% 100%; animation: shimmer 1.2s linear infinite; }
+
+/* Voortgang per seizoen */
+.season-progress { display: grid; gap: 8px; }
+.season-row { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; animation: rise 0.4s var(--ease-out) both; animation-delay: calc(var(--i) * 40ms); }
+.season-label { font-weight: 800; font-size: 0.82rem; color: var(--muted); }
+.season-track { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.07); overflow: hidden; }
+.season-track span { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent-2), var(--accent)); transform-origin: left; animation: grow-x 0.8s var(--ease-out) both; }
+.season-count { font-size: 0.78rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

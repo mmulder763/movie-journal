@@ -1,7 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react'
 import type { Entry } from '../types'
 import { summarizeTitles } from '../lib/titles'
-import { useWatchTime } from '../lib/watchTime'
+import { useWatchTime, type WatchTime } from '../lib/watchTime'
 import { useTitleMeta } from '../lib/titleMeta'
 import { useCountUp } from '../lib/motion'
 import { profileUrl } from '../lib/tmdb'
@@ -113,12 +113,11 @@ export function StatsView({ entries }: Props) {
         <p className="empty">Nog geen kijkmomenten in deze periode.</p>
       ) : (
         <>
+          <WatchTimeHero time={watchTime} />
           <div className="stat-tiles">
-            <Tile value={Math.round(watchTime.minutes / 60)} label="Uur gekeken" />
             <Tile value={scoped.length} label="Kijkmomenten" />
             <Tile value={movies} label="Films" color={FILM} />
             <Tile value={titles.length - movies} label="Series" color={SERIE} />
-            <Tile value={scoped.filter((e) => e.cinema).length} label="Bioscoopbezoeken" />
             <Tile value={avgRating} decimals={1} prefix="★ " label="Gem. rating" />
           </div>
 
@@ -199,4 +198,37 @@ function Tile({ value, label, decimals = 0, prefix = '', color }: { value?: numb
 
 function Loading({ loaded, total }: { loaded: number; total: number }) {
   return <p className="muted small">{loaded < total ? `Gegevens ophalen… ${loaded}/${total}` : 'Geen gegevens beschikbaar.'}</p>
+}
+
+function WatchTimeHero({ time }: { time: WatchTime }) {
+  const hours = useCountUp(time.minutes / 60, 1400)
+  const days = Math.floor(time.minutes / 1440)
+  const restHours = Math.floor((time.minutes % 1440) / 60)
+  const pending = time.total - time.loaded - time.failed
+
+  return (
+    <div className="watch-time">
+      <span className="eyebrow">Totale kijktijd</span>
+      <div className="watch-time-main">
+        <strong>{Math.round(hours).toLocaleString('nl-NL')}</strong>
+        <span>uur</span>
+      </div>
+      <span className="muted small">
+        {time.minutes === 0 && pending === 0
+          ? 'Nog niets om op te tellen'
+          : days > 0
+            ? `≈ ${days} ${days === 1 ? 'dag' : 'dagen'} en ${restHours} uur van je leven aan films en series`
+            : `${Math.floor(time.minutes / 60)} uur en ${Math.round(time.minutes % 60)} minuten aan films en series`}
+      </span>
+      {pending > 0 && (
+        <div className="watch-time-progress" aria-label="Speelduren ophalen">
+          <span style={{ width: `${(time.loaded / time.total) * 100}%` }} />
+          <em>Speelduren ophalen… {time.loaded}/{time.total}</em>
+        </div>
+      )}
+      {time.failed > 0 && pending === 0 && (
+        <span className="muted small">{time.failed} titel(s) zonder bekende speelduur niet meegeteld</span>
+      )}
+    </div>
+  )
 }

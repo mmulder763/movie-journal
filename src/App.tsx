@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { Entry } from './types'
 import { exportJournal, parseImport, useJournal, type SyncStatus } from './lib/storage'
-import { computeStats, summarizeTitles, titleKey } from './lib/titles'
+import { summarizeTitles, titleKey } from './lib/titles'
 import { fromISODate, today } from './lib/dates'
 import { emptyJournal } from './lib/journal'
 import type { Backend } from './lib/backends'
@@ -72,7 +72,6 @@ export default function App({ backend, onOpenSettings }: AppProps) {
     const prefix = `${view.year}-${String(view.month + 1).padStart(2, '0')}`
     return entries.filter((e) => e.date?.startsWith(prefix))
   }, [entries, view])
-  const stats = useMemo(() => computeStats(entries, titles), [entries, titles])
   const journalKeys = useMemo(() => new Set(entries.map(titleKey)), [entries])
   const skippedKeys = useMemo(() => new Set(journal.skipped), [journal.skipped])
   const watchlistKeys = useMemo(() => new Set(journal.watchlist.map(titleKey)), [journal.watchlist])
@@ -125,10 +124,13 @@ export default function App({ backend, onOpenSettings }: AppProps) {
     setView({ year: d.getFullYear(), month: d.getMonth() })
   }
 
-  const handleSave = (entry: Entry) => {
-    dispatch({ type: 'upsert', entry })
-    leaveWatchlist(titleKey(entry))
-    if (entry.date) goToDate(entry.date)
+  const handleSave = (saved: Entry[]) => {
+    for (const entry of saved) dispatch({ type: 'upsert', entry })
+    if (saved[0]) {
+      leaveWatchlist(titleKey(saved[0]))
+      if (saved[0].date) goToDate(saved[0].date)
+    }
+    if (saved.length > 1) notify(`📺 ${saved.length} afleveringen van ${saved[0].title} opgeslagen`)
     setDialog(null)
   }
 
@@ -263,7 +265,7 @@ export default function App({ backend, onOpenSettings }: AppProps) {
               </button>
             </div>
             {listMode === 'seen' ? (
-              <ListView titles={titles} stats={stats} onOpen={setOpenTitle} />
+              <ListView titles={titles} onOpen={setOpenTitle} />
             ) : (
               <WatchlistView items={journal.watchlist} seenKeys={journalKeys} onAdd={addToWatchlist} onOpen={setOpenWatchItem} />
             )}
@@ -344,6 +346,7 @@ export default function App({ backend, onOpenSettings }: AppProps) {
           initial={dialog.initial}
           isNew={dialog.isNew}
           date={selected}
+          history={entries}
           onSave={handleSave}
           onDelete={handleDelete}
           onClose={() => setDialog(null)}

@@ -10,7 +10,9 @@ interface Props {
   /** false = bestaande entry bewerken */
   isNew: boolean
   date: string
-  onSave: (entry: Entry) => void
+  /** Eerdere kijkmomenten van dezelfde titel */
+  history?: Entry[]
+  onSave: (entries: Entry[]) => void
   onDelete: (id: string) => void
   onClose: () => void
 }
@@ -29,7 +31,7 @@ export function entryFromResult(r: SearchResult | Entry | WatchItem, date: strin
   }
 }
 
-export function EntryDialog({ initial, isNew, date, onSave, onDelete, onClose }: Props) {
+export function EntryDialog({ initial, isNew, date, history = [], onSave, onDelete, onClose }: Props) {
   const [draft, setDraft] = useState<Entry | null>(initial)
   const startedWithSearch = initial === null
 
@@ -39,6 +41,7 @@ export function EntryDialog({ initial, isNew, date, onSave, onDelete, onClose }:
         <EntryForm
           entry={draft}
           fallbackDate={date}
+          history={history.filter((h) => h.tmdbId === draft.tmdbId && h.mediaType === draft.mediaType)}
           isNew={isNew}
           onSave={onSave}
           onDelete={onDelete}

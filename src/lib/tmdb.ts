@@ -284,6 +284,41 @@ export async function fetchTitleMeta(mediaType: MediaType, tmdbId: number): Prom
   }
 }
 
+export interface SeasonInfo {
+  number: number
+  name: string
+  episodeCount: number
+}
+
+export interface EpisodeInfo {
+  number: number
+  name: string
+  runtime?: number
+  airDate?: string
+}
+
+/** Seizoenen van een serie (specials/seizoen 0 achteraan). */
+export async function fetchSeasons(tvId: number): Promise<SeasonInfo[]> {
+  const d = await request<{ seasons?: { season_number: number; name: string; episode_count: number }[] }>(`/tv/${tvId}`)
+  return (d.seasons ?? [])
+    .filter((s) => s.episode_count > 0)
+    .map((s) => ({ number: s.season_number, name: s.name, episodeCount: s.episode_count }))
+    .sort((a, b) => (a.number === 0 ? 1 : b.number === 0 ? -1 : a.number - b.number))
+}
+
+/** Afleveringen van één seizoen. */
+export async function fetchSeasonEpisodes(tvId: number, season: number): Promise<EpisodeInfo[]> {
+  const d = await request<{ episodes?: { episode_number: number; name: string; runtime?: number | null; air_date?: string | null }[] }>(
+    `/tv/${tvId}/season/${season}`,
+  )
+  return (d.episodes ?? []).map((e) => ({
+    number: e.episode_number,
+    name: e.name,
+    runtime: e.runtime || undefined,
+    airDate: e.air_date || undefined,
+  }))
+}
+
 export const profileUrl = (path: string | null) => (path ? `${IMAGE_BASE}/w185${path}` : null)
 export const logoUrl = (path: string) => `${IMAGE_BASE}/w92${path}`
 

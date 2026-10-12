@@ -35,20 +35,3 @@ export function summarizeTitles(entries: Entry[]): TitleSummary[] {
     }
   })
 }
-
-export interface Stats {
-  movies: number
-  series: number
-  watchesThisYear: number
-  avgRating?: number
-}
-
-export function computeStats(entries: Entry[], titles: TitleSummary[]): Stats {
-  const year = String(new Date().getFullYear())
-  return {
-    movies: titles.filter((t) => t.mediaType === 'movie').length,
-    series: titles.filter((t) => t.mediaType === 'tv').length,
-    watchesThisYear: entries.filter((e) => e.date?.startsWith(year)).length,
-    avgRating: average(entries.map((e) => e.rating).filter((r): r is number => r != null)),
-  }
-}

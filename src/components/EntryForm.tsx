@@ -3,28 +3,64 @@ import type { Entry } from '../types'
 import { Poster } from './Poster'
 import { StarRating } from './StarRating'
 import { formatLongDate, today } from '../lib/dates'
+import { EpisodePicker, type EpisodeSelection } from './EpisodePicker'
 
 interface Props {
   entry: Entry
   /** Datum om terug naar te zetten als "datum onbekend" wordt uitgevinkt */
   fallbackDate?: string
   isNew: boolean
-  onSave: (entry: Entry) => void
+  /** Eerdere kijkmomenten van dezelfde titel (voor de afleveringskiezer) */
+  history?: Entry[]
+  /** Eén entry, of bij een serie één entry per aangevinkte aflevering */
+  onSave: (entries: Entry[]) => void
   onDelete: (id: string) => void
   onBack?: () => void
 }
 
-const toOptionalInt = (v: string) => (v === '' ? undefined : Math.max(0, parseInt(v, 10)))
+/** Standaard het seizoen van deze entry, anders het laatst gekeken seizoen, anders 1 */
+function initialSeason(entry: Entry, history: Entry[]) {
+  if (entry.season != null) return entry.season
+  const seasons = history.flatMap((e) => (e.season != null && e.season > 0 ? [e.season] : []))
+  return seasons.length ? Math.max(...seasons) : 1
+}
 
-export function EntryForm({ entry, fallbackDate, isNew, onSave, onDelete, onBack }: Props) {
+export function EntryForm({ entry, fallbackDate, isNew, history = [], onSave, onDelete, onBack }: Props) {
   const [draft, setDraft] = useState(entry)
   // Staat het al in de agenda, dan liggen datum/bios/aflevering vast; alleen rating en notitie zijn aan te passen
   const locked = !isNew && entry.date !== null
   const update = (patch: Partial<Entry>) => setDraft((d) => ({ ...d, ...patch }))
+  const isSeries = draft.mediaType === 'tv'
+  const [selection, setSelection] = useState<EpisodeSelection>(() => ({
+    season: initialSeason(entry, history),
+    episodes: entry.episode != null ? [entry.episode] : [],
+  }))
+
   const submit = (e: FormEvent) => {
     e.preventDefault()
-    onSave({ ...draft, note: draft.note?.trim() || undefined })
+    const base = { ...draft, note: draft.note?.trim() || undefined }
+    if (!isSeries || locked) return onSave([base])
+    // Geen aflevering aangevinkt: de serie als geheel (zoals bij swipen)
+    if (selection.episodes.length === 0) return onSave([{ ...base, season: undefined, episode: undefined }])
+    onSave(
+      selection.episodes.map((episode, i) => ({
+        ...base,
+        // Bij bewerken houdt de eerste aflevering het bestaande id
+        id: i === 0 ? base.id : crypto.randomUUID(),
+        season: selection.season,
+        episode,
+        createdAt: base.createdAt + i,
+      })),
+    )
   }
+
+  const saveLabel = !isSeries || locked
+    ? 'Opslaan'
+    : selection.episodes.length > 1
+      ? `${selection.episodes.length} afleveringen opslaan`
+      : selection.episodes.length === 1
+        ? `S${selection.season}E${selection.episodes[0]} opslaan`
+        : 'Opslaan (hele serie)'
 
   return (
     <form className="entry-form" onSubmit={submit}>
@@ -62,18 +98,11 @@ export function EntryForm({ entry, fallbackDate, isNew, onSave, onDelete, onBack
             </div>
           </div>
 
-          {draft.mediaType === 'tv' && (
-            <div className="row">
-              <label>
-                Seizoen
-                <input type="number" min={0} inputMode="numeric" value={draft.season ?? ''}
-                  onChange={(e) => update({ season: toOptionalInt(e.target.value) })} />
-              </label>
-              <label>
-                Aflevering
-                <input type="number" min={0} inputMode="numeric" value={draft.episode ?? ''}
-                  onChange={(e) => update({ episode: toOptionalInt(e.target.value) })} />
-              </label>
+          {isSeries && (
+            <div className="field">
+              <span>{isNew ? 'Welke afleveringen?' : 'Aflevering'}</span>
+              <EpisodePicker tvId={draft.tmdbId} history={history.filter((h) => h.id !== entry.id)}
+                value={selection} onChange={setSelection} multiple={isNew} />
             </div>
           )}
 
@@ -99,7 +128,7 @@ export function EntryForm({ entry, fallbackDate, isNew, onSave, onDelete, onBack
             Verwijderen
           </button>
         )}
-        <button type="submit" className="btn-primary">Opslaan</button>
+        <button type="submit" className="btn-primary">{saveLabel}</button>
       </div>
     </form>
   )
