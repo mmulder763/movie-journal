@@ -26,11 +26,8 @@ export interface MarqueeSlide {
 interface Props {
   titles: TitleSummary[]
   friends: Friend[]
-  /** Titels die al op je watchlist staan of die je zelf zag */
-  knownKeys: Set<string>
-  onOpen: (key: string) => void
-  onOpenFriend: (friend: Friend) => void
-  onAddToWatchlist: (slide: MarqueeSlide) => void
+  /** Tik op de banner: details van de huidige slide */
+  onOpenSlide: (slide: MarqueeSlide) => void
   onAdd: () => void
   /** Huidige slide, voor de ambient-achtergrond */
   onSlideChange?: (slide: MarqueeSlide | undefined) => void
@@ -61,7 +58,7 @@ const fromEntry = (e: Entry, friend: Friend): MarqueeSlide => ({
  * Bioscoop-banner met wat jij en je vrienden het laatst keken (op logmoment),
  * wisselend met een trage Ken Burns-zoom.
  */
-export function NowShowing({ titles, friends, knownKeys, onOpen, onOpenFriend, onAddToWatchlist, onAdd, onSlideChange }: Props) {
+export function NowShowing({ titles, friends, onOpenSlide, onAdd, onSlideChange }: Props) {
   const slides = useMemo(() => {
     const mine: MarqueeSlide[] = titles.map((t) => ({
       key: `me-${t.key}`,
@@ -103,7 +100,9 @@ export function NowShowing({ titles, friends, knownKeys, onOpen, onOpenFriend, o
   useEffect(() => onSlideChange?.(current), [current, onSlideChange])
 
   return (
-    <section className="marquee">
+    <section className={`marquee ${current ? 'clickable' : ''}`} role={current ? 'button' : undefined} tabIndex={current ? 0 : undefined}
+      onClick={(e) => current && !(e.target as HTMLElement).closest('.marquee-dots') && onOpenSlide(current)}
+      onKeyDown={(e) => current && (e.key === 'Enter' || e.key === ' ') && onOpenSlide(current)}>
       <div className="marquee-slides">
         {slides.map((s, i) => (
           <div
@@ -133,20 +132,7 @@ export function NowShowing({ titles, friends, knownKeys, onOpen, onOpenFriend, o
               {current.year && <span className="muted small">{current.year}</span>}
               {current.rating != null && <StarRating value={current.rating} />}
             </div>
-            <div className="marquee-actions">
-              {current.friend ? (
-                <>
-                  {!knownKeys.has(current.titleKey) && (
-                    <button className="btn-primary marquee-btn" onClick={() => onAddToWatchlist(current)}>🔖 Watchlist</button>
-                  )}
-                  <button className="btn-ghost marquee-btn" onClick={() => onOpenFriend(current.friend!)}>
-                    Bekijk {current.friend.display_name.split(' ')[0]}
-                  </button>
-                </>
-              ) : (
-                <button className="btn-ghost marquee-btn" onClick={() => onOpen(current.titleKey)}>Bekijk details</button>
-              )}
-            </div>
+            <span className="marquee-hint">Tik voor details ›</span>
           </>
         ) : (
           <>

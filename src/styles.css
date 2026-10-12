@@ -716,7 +716,13 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 .list-switch { max-width: 520px; }
 .list-switch button { flex: 1; padding: 10px 8px; font-size: 0.88rem; white-space: nowrap; }
 @media (max-width: 400px) { .list-switch button { font-size: 0.8rem; padding: 10px 4px; } .list-switch .chip-count { margin-left: 2px; } }
-.notseen-actions { display: flex; gap: 6px; margin-top: 4px; }
+.notseen-item { height: 100%; }
+/* Knoppen altijd onderaan de kaart, hoe lang de titel ook is */
+.notseen-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 6px; }
+button.wall-poster { display: block; width: 100%; padding: 0; }
+.notseen-title { text-align: left; padding: 0; min-height: 2.1em; }
+.list-wall > li { display: flex; }
+.list-wall > li > .wall-item { flex: 1; }
 .notseen-actions button {
   flex: 1; height: 32px; border-radius: 10px; font-size: 0.9rem; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border);
   transition: background 0.15s, transform 0.15s var(--spring);
@@ -980,8 +986,10 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 .feed-watch:hover { transform: scale(1.12); border-color: var(--tv); }
 .marquee-who { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; font-size: 0.85rem; }
 .marquee-who > span:last-child::before { content: '· '; }
-.marquee-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
-.marquee-actions .marquee-btn { margin-top: 0; }
+.marquee.clickable { cursor: pointer; }
+.marquee.clickable:active .marquee-content { transform: scale(0.99); }
+.marquee-hint { margin-top: 6px; font-size: 0.8rem; font-weight: 600; color: rgba(238, 245, 241, 0.7); transition: color 0.2s, transform 0.2s var(--ease-out); }
+.marquee.clickable:hover .marquee-hint { color: var(--accent); transform: translateX(3px); }
 
 .friend-profile { display: grid; gap: 14px; }
 .friend-hero { display: flex; align-items: center; gap: 16px; }

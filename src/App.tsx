@@ -19,6 +19,7 @@ import { WatchItemSheet } from './components/WatchItemSheet'
 import { AgendaIcon, FriendsIcon, ListIcon, StatsIcon, SwipeIcon } from './components/Icons'
 import { Avatar, FriendsView } from './components/FriendsView'
 import { FriendProfile } from './components/FriendProfile'
+import { FriendTitleSheet } from './components/FriendTitleSheet'
 import { AccountSheet } from './components/AccountSheet'
 import { useSocial, type Friend } from './lib/social'
 import type { Profile } from './lib/supabase'
@@ -59,6 +60,8 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   const TABS = me ? [...BASE_TABS, FRIENDS_TAB] : BASE_TABS
   const social = useSocial(me)
   const [openFriend, setOpenFriend] = useState<Friend | null>(null)
+  /** Detailscherm van een titel van een vriend (vanuit de banner) */
+  const [friendTitle, setFriendTitle] = useState<{ item: WatchItem; friend: Friend } | null>(null)
   const [account, setAccount] = useState(false)
   const pendingInvite = invite && me && invite !== me.username ? invite : null
   // De vriendentab neemt de uitnodiging bij het openen over; daarna niet nog eens tonen
@@ -234,8 +237,8 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
       <main className="tab-page" key={tab}>
         {tab === 'agenda' && (
           <>
-            <NowShowing titles={titles} friends={social.friends} knownKeys={knownForWatchlist}
-              onOpen={setOpenTitle} onOpenFriend={setOpenFriend} onAddToWatchlist={addToWatchlist}
+            <NowShowing titles={titles} friends={social.friends}
+              onOpenSlide={(slide) => (slide.friend ? setFriendTitle({ item: { ...slide, addedAt: 0 }, friend: slide.friend }) : setOpenTitle(slide.titleKey))}
               onAdd={() => setDialog({ initial: null, isNew: true })} onSlideChange={setMarqueeTitle} />
             <div className="layout">
               <Calendar
@@ -368,6 +371,15 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
           onClose={() => setOpenFriend(null)}
           onAddToWatchlist={addToWatchlist}
         />
+      )}
+
+      {friendTitle && (
+        <FriendTitleSheet item={friendTitle.item} friend={friendTitle.friend} mySeen={journalKeys} knownKeys={knownForWatchlist}
+          onAddToWatchlist={addToWatchlist} onClose={() => setFriendTitle(null)}
+          onOpenFriend={() => {
+            setOpenFriend(friendTitle.friend)
+            setFriendTitle(null)
+          }} />
       )}
 
       {account && me && onSignOut && (

@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import type { MediaType, WatchItem } from '../types'
 import { fetchBasic, hasApiKey } from '../lib/tmdb'
 import { Poster } from './Poster'
+import { TitlePreviewSheet } from './WatchItemSheet'
+import { useStreamingProviders } from '../lib/providers'
+import { logoUrl } from '../lib/tmdb'
 import { SearchIcon } from './ListView'
 
 interface Props {
@@ -21,6 +24,7 @@ const keyOf = (t: { mediaType: string; tmdbId: number }) => `${t.mediaType}-${t.
 export function NotSeenView({ skipped, items, onSeen, onWatchlist, onRestore }: Props) {
   const [fetched, setFetched] = useState<Record<string, WatchItem>>({})
   const [query, setQuery] = useState('')
+  const [open, setOpen] = useState<WatchItem | null>(null)
 
   // Oudere skips hebben alleen een sleutel: titel en poster alsnog ophalen
   useEffect(() => {
@@ -48,6 +52,8 @@ export function NotSeenView({ skipped, items, onSeen, onWatchlist, onRestore }: 
       .filter((w): w is WatchItem => !!w && (!q || w.title.toLowerCase().includes(q)))
   }, [skipped, items, fetched, query])
 
+  const providers = useStreamingProviders(list)
+
   if (skipped.length === 0) {
     return (
       <div className="list-empty">
@@ -69,9 +75,16 @@ export function NotSeenView({ skipped, items, onSeen, onWatchlist, onRestore }: 
       <ul className="poster-wall list-wall">
         {list.map((w, i) => (
           <li key={keyOf(w)} className="rise" style={{ '--i': Math.min(i, 24) } as CSSProperties}>
-            <div className="wall-item">
-              <div className="wall-poster"><Poster path={w.posterPath} title={w.title} size="w342" /></div>
-              <span className="wall-title">{w.title}</span>
+            <div className="wall-item notseen-item">
+              <button className="wall-poster" onClick={() => setOpen(w)} aria-label={`Details van ${w.title}`}>
+                <Poster path={w.posterPath} title={w.title} size="w342" />
+                {(providers[keyOf(w)] ?? []).length > 0 && (
+                  <span className="wall-providers">
+                    {providers[keyOf(w)].slice(0, 3).map((p) => <img key={p.name} src={logoUrl(p.logoPath)} alt={p.name} title={p.name} />)}
+                  </span>
+                )}
+              </button>
+              <button className="wall-title notseen-title" onClick={() => setOpen(w)}>{w.title}</button>
               <span className="muted small">{w.mediaType === 'tv' ? 'Serie' : 'Film'}{w.year && ` · ${w.year}`}</span>
               <div className="notseen-actions">
                 <button onClick={() => onSeen(w)} title="Toch gezien" aria-label={`${w.title}: toch gezien`}>✓</button>
@@ -82,6 +95,14 @@ export function NotSeenView({ skipped, items, onSeen, onWatchlist, onRestore }: 
           </li>
         ))}
       </ul>
+
+      {open && (
+        <TitlePreviewSheet item={open} status="✕ Bij swipen als niet gezien gemarkeerd" onClose={() => setOpen(null)}>
+          <button className="btn-primary" onClick={() => { setOpen(null); onSeen(open) }}>✓ Toch gezien</button>
+          <button className="btn-ghost" onClick={() => { setOpen(null); onWatchlist(open) }}>🔖 Op watchlist</button>
+          <button className="btn-text" onClick={() => { setOpen(null); onRestore(keyOf(open)) }}>↺ Terug in swipe</button>
+        </TitlePreviewSheet>
+      )}
     </section>
   )
 }

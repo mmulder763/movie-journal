@@ -5,6 +5,10 @@ import { compareDatesDesc, summarizeTitles, titleKey } from '../lib/titles'
 import { Modal } from './Modal'
 import { Poster } from './Poster'
 import { Avatar } from './FriendsView'
+import { FriendTitleSheet } from './FriendTitleSheet'
+import { useStreamingProviders } from '../lib/providers'
+import { logoUrl } from '../lib/tmdb'
+import type { WatchItem } from '../types'
 
 interface Props {
   friend: Friend
@@ -31,6 +35,21 @@ export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, kn
   const movies = titles.filter((t) => t.mediaType === 'movie').length
 
   const list = tab === 'seen' ? titles : tab === 'shared' ? shared : []
+  const [open, setOpen] = useState<WatchItem | null>(null)
+
+  // Streaming-logo's voor de titels in het huidige tabblad
+  const visibleItems = useMemo<WatchItem[]>(
+    () => (tab === 'watchlist' ? friend.journal.watchlist : list.map((t) => ({ ...t, addedAt: 0 }))),
+    [tab, friend, list],
+  )
+  const providers = useStreamingProviders(visibleItems)
+  const streamLogos = (key: string) =>
+    (providers[key] ?? []).length > 0 && (
+      <span className="wall-providers">
+        {providers[key].slice(0, 3).map((p) => <img key={p.name} src={logoUrl(p.logoPath)} alt={p.name} title={p.name} />)}
+      </span>
+    )
+
 
   return (
     <Modal title={friend.display_name} onClose={onClose}>
@@ -71,7 +90,10 @@ export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, kn
                 return (
                   <li key={titleKey(w)} className="rise" style={{ '--i': Math.min(i, 20) } as CSSProperties}>
                     <div className="wall-item">
-                      <div className="wall-poster"><Poster path={w.posterPath} title={w.title} size="w342" /></div>
+                      <button className="wall-poster" onClick={() => setOpen(w)} aria-label={`Details van ${w.title}`}>
+                        <Poster path={w.posterPath} title={w.title} size="w342" />
+                        {streamLogos(titleKey(w))}
+                      </button>
                       <span className="wall-title">{w.title}</span>
                       <button className="btn-text small-btn" disabled={onMine}
                         onClick={() => onAddToWatchlist(w)}>
@@ -90,10 +112,11 @@ export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, kn
             {list.map((t, i) => (
               <li key={t.key} className="rise" style={{ '--i': Math.min(i, 20) } as CSSProperties}>
                 <div className="wall-item">
-                  <div className="wall-poster">
+                  <button className="wall-poster" onClick={() => setOpen({ ...t, addedAt: 0 })} aria-label={`Details van ${t.title}`}>
                     <Poster path={t.posterPath} title={t.title} size="w342" />
                     {t.avgRating != null && <span className="wall-rating">★ {t.avgRating.toFixed(1)}</span>}
-                  </div>
+                    {streamLogos(t.key)}
+                  </button>
                   <span className="wall-title">{t.title}</span>
                   <span className="muted small">{t.mediaType === 'tv' ? 'Serie' : 'Film'}{t.year && ` · ${t.year}`}</span>
                   {tab === 'seen' && (
@@ -108,6 +131,11 @@ export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, kn
         )}
 
       </div>
+
+      {open && (
+        <FriendTitleSheet item={open} friend={friend} mySeen={mine} knownKeys={knownKeys}
+          onAddToWatchlist={onAddToWatchlist} onClose={() => setOpen(null)} />
+      )}
     </Modal>
   )
 }
