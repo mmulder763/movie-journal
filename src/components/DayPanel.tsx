@@ -17,7 +17,7 @@ export function DayPanel({ date, entries, onAdd, onEdit }: Props) {
   const heroImg = hero && (backdropUrl(hero.backdropPath) ?? posterUrl(hero.posterPath, 'w500'))
 
   return (
-    <section className="day-panel" key={date}>
+    <section className="day-panel" id="day-panel" key={date}>
       <header className={`day-hero ${heroImg ? 'has-image' : ''}`}>
         {heroImg && <div className="day-hero-img" style={{ backgroundImage: `url(${heroImg})` }} />}
         <div className="day-hero-content">

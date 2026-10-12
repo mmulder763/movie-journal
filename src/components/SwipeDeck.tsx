@@ -31,7 +31,6 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [history, setHistory] = useState<SwipeAction[]>([])
-  const [sessionCount, setSessionCount] = useState(0)
   const top = useRef<SwipeCardHandle>(null)
   const generation = useRef(0)
   const [query, setQuery] = useState('')
@@ -104,7 +103,6 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
       const action = { card, verdict }
       setCards((prev) => prev.filter((c) => c !== card))
       setHistory((h) => [action, ...h].slice(0, 20))
-      setSessionCount((n) => n + 1)
       onSwipe(action)
     },
     [visible, onSwipe],
@@ -114,7 +112,6 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
     const [last, ...rest] = history
     if (!last) return
     setHistory(rest)
-    setSessionCount((n) => Math.max(0, n - 1))
     setCards((prev) => [last.card, ...prev])
     onUndo(last)
   }
@@ -162,6 +159,7 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
       </div>
 
       <div className="deck">
+        <div className="deck-stage">
         {visible.length === 0 ? (
           <div className="deck-empty">
             {loading ? <div className="reel-spinner" aria-label="Laden" /> : error ? (
@@ -195,6 +193,7 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
               )
             })
         )}
+        </div>
       </div>
 
       <div className="swipe-actions">
@@ -204,7 +203,6 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
           aria-label="Op de watchlist" title="Wil ik nog zien">🔖</button>
         <button className="round-btn seen" onClick={() => top.current?.fly('seen')} disabled={!visible.length} aria-label="Gezien">✓</button>
       </div>
-      {sessionCount > 0 && <p className="muted small swipe-count">{sessionCount} geswipet deze sessie</p>}
     </section>
   )
 }

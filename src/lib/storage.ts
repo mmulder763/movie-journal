@@ -132,16 +132,3 @@ export function useJournal(backend: Backend) {
 
   return { journal, status, dispatch, sync }
 }
-
-export function exportJournal(journal: Journal) {
-  const blob = new Blob([JSON.stringify(journal, null, 2)], { type: 'application/json' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `movie-journal-${new Date().toISOString().slice(0, 10)}.json`
-  a.click()
-  URL.revokeObjectURL(a.href)
-}
-
-export async function parseImport(file: File): Promise<Journal> {
-  return normalizeJournal(JSON.parse(await file.text()))
-}

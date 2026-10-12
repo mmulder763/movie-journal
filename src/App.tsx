@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Entry } from './types'
-import { exportJournal, parseImport, useJournal, type SyncStatus } from './lib/storage'
+import { useJournal, type SyncStatus } from './lib/storage'
 import { summarizeTitles, titleKey } from './lib/titles'
 import { fromISODate, today } from './lib/dates'
-import { emptyJournal } from './lib/journal'
 import type { Backend } from './lib/backends'
 import { Calendar } from './components/Calendar'
+import { DayMenu } from './components/DayMenu'
 import { DayPanel } from './components/DayPanel'
 import { EntryDialog, entryFromResult } from './components/EntryDialog'
 import { ListView } from './components/ListView'
@@ -67,6 +67,11 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   const { journal, status, dispatch, sync } = useJournal(backend)
   const { entries } = journal
   const [tab, setTab] = useState<Tab>(() => (pendingInvite ? 'friends' : 'agenda'))
+  // Swipe-scherm past precies op het scherm: pagina zelf niet laten scrollen
+  useEffect(() => {
+    document.documentElement.classList.toggle('lock-scroll', tab === 'swipe')
+    return () => document.documentElement.classList.remove('lock-scroll')
+  }, [tab])
   const [selected, setSelected] = useState(today)
   const [view, setView] = useState(() => {
     const d = new Date()
@@ -74,7 +79,6 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   })
   const [dialog, setDialog] = useState<DialogState>(null)
   const [openTitle, setOpenTitle] = useState<string | null>(null)
-  const importInput = useRef<HTMLInputElement>(null)
   /** titleKey → entry-id van de laatste "gezien"-swipe, voor undo */
   const swipedEntries = useRef(new Map<string, string>())
   const [toast, setToast] = useState<ToastMessage | null>(null)
@@ -203,29 +207,6 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
     swipedEntries.current.delete(key)
   }
 
-  /** Tijdelijk voor de testfase: alles leeg, op alle apparaten */
-  const handleReset = () => {
-    const total = entries.length + journal.skipped.length + journal.watchlist.length
-    if (!confirm(`Alles wissen? ${entries.length} items, ${journal.watchlist.length} watchlist-titels en ${journal.skipped.length} weggeswipete titels verdwijnen op al je apparaten.`)) return
-    dispatch({ type: 'replace', journal: emptyJournal() })
-    swipedEntries.current.clear()
-    notify(total ? '🧹 Journal gereset' : 'Journal was al leeg')
-  }
-
-  const handleImport = async (file: File | undefined) => {
-    if (!file) return
-    try {
-      const imported = await parseImport(file)
-      if (confirm(`${imported.entries.length} items importeren? Dit vervangt je huidige journal (${entries.length} items).`)) {
-        dispatch({ type: 'replace', journal: imported })
-      }
-    } catch (err) {
-      alert((err as Error).message)
-    } finally {
-      if (importInput.current) importInput.current.value = ''
-    }
-  }
-
   return (
     <div className="app">
       <Ambient image={ambientImage} />
@@ -252,10 +233,6 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
               <Avatar profile={me} size={34} />
             </button>
           )}
-          <button className="btn-text hide-mobile" onClick={() => exportJournal(journal)}>Export</button>
-          <button className="btn-text hide-mobile" onClick={() => importInput.current?.click()}>Import</button>
-          <input ref={importInput} type="file" accept="application/json" hidden
-            onChange={(e) => handleImport(e.target.files?.[0])} />
         </div>
       </header>
 
@@ -275,6 +252,27 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
                 onMonthChange={changeMonth}
                 onToday={() => goToDate(today())}
                 onShare={() => setSharingMonth(true)}
+                renderDayMenu={(date, close) => (
+                  <DayMenu
+                    date={date}
+                    count={entriesByDate.get(date)?.length ?? 0}
+                    watchlist={journal.watchlist}
+                    onAdd={() => {
+                      close()
+                      setSelected(date)
+                      setDialog({ initial: null, isNew: true })
+                    }}
+                    onView={() => {
+                      close()
+                      document.getElementById('day-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }}
+                    onPick={(item) => {
+                      close()
+                      setSelected(date)
+                      setDialog({ initial: entryFromResult(item, date), isNew: true })
+                    }}
+                  />
+                )}
               />
               <DayPanel
                 date={selected}
@@ -300,11 +298,6 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
             ) : (
               <WatchlistView items={journal.watchlist} seenKeys={journalKeys} onAdd={addToWatchlist} onOpen={setOpenWatchItem} />
             )}
-            <div className="list-footer">
-              <button className="btn-text" onClick={() => exportJournal(journal)}>Export</button>
-              <button className="btn-text" onClick={() => importInput.current?.click()}>Import</button>
-              <button className="btn-text btn-reset" onClick={handleReset}>Reset (test)</button>
-            </div>
           </>
         )}
         {tab === 'stats' && <StatsView entries={entries} />}

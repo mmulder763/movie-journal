@@ -4,6 +4,7 @@ import { logoUrl, searchTitles, type Provider } from '../lib/tmdb'
 import { titleKey } from '../lib/titles'
 import { useStreamingProviders } from '../lib/providers'
 import { Poster } from './Poster'
+import { SearchIcon } from './ListView'
 
 interface Props {
   items: WatchItem[]
@@ -40,9 +41,11 @@ export function WatchlistView({ items, seenKeys, onAdd, onOpen }: Props) {
       <WatchlistSearch watchKeys={new Set(items.map(titleKey))} seenKeys={seenKeys} onAdd={onAdd} />
 
       {items.length === 0 ? (
-        <p className="empty">
-          Je watchlist is nog leeg. Zoek hierboven een titel, of tik bij het swipen op 🔖.
-        </p>
+        <div className="list-empty">
+          <span className="list-empty-icon">🔖</span>
+          <h3>Nog niets op je watchlist</h3>
+          <p className="muted">Zoek hierboven een titel, veeg bij het swipen omhoog, of pak iets van een vriend.</p>
+        </div>
       ) : (
         <>
           <div className="watchlist-bar">
@@ -125,10 +128,11 @@ function WatchlistSearch({ watchKeys, seenKeys, onAdd }: { watchKeys: Set<string
 
   return (
     <div className="watchlist-search">
-      <div className="swipe-search">
+      <div className="list-search">
+        <SearchIcon />
         <input type="search" placeholder="Zet een film of serie op je watchlist…" value={query}
           onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
-        {query && <button className="swipe-search-clear" onClick={() => setQuery('')} aria-label="Wissen">✕</button>}
+        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Wissen">✕</button>}
       </div>
       {results.length > 0 && (
         <ul className="search-dropdown">
