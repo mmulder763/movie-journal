@@ -76,9 +76,12 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
   background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--accent-text);
   box-shadow: 0 10px 24px -10px rgba(20, 184, 166, 0.8); transition: transform 0.2s var(--spring), box-shadow 0.2s;
 }
-.btn-primary::after { /* lichtschittering */
-  content: ''; position: absolute; inset: 0; transform: translateX(-120%);
-  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+.btn-primary { isolation: isolate; }
+@media (hover: hover) {
+  .btn-primary::after { /* lichtschittering (alleen met muis; iOS knipt deze laag niet altijd netjes af) */
+    content: ''; position: absolute; inset: 0; transform: translateX(-120%);
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+  }
 }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -10px rgba(20, 184, 166, 0.9); }
 .btn-primary:hover::after { transition: transform 0.7s var(--ease-out); transform: translateX(120%); }
@@ -350,7 +353,7 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .swipe-view {
   /* Precies de ruimte tussen header en tabbar, zodat er niets te scrollen valt */
   --swipe-h: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 214px);
-  height: var(--swipe-h); display: flex; flex-direction: column; align-items: center; gap: 12px; overflow: hidden;
+  height: var(--swipe-h); display: flex; flex-direction: column; align-items: center; gap: 12px;
 }
 @media (min-width: 900px) { .swipe-view { --swipe-h: calc(100dvh - env(safe-area-inset-top) - 140px); } }
 .lock-scroll, .lock-scroll body { overflow: hidden; overscroll-behavior: none; }
@@ -370,7 +373,11 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .swipe-search input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
 .swipe-search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; color: var(--muted); }
 .swipe-search-clear:hover { background: var(--surface-2); color: var(--text); }
-.chips { display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding: 2px; scrollbar-width: none; }
+.chips {
+  display: flex; gap: 6px; overflow-x: auto; max-width: 100%; scrollbar-width: none;
+  /* Scrollvakken knippen schaduwen af: ruimte maken voor de gloed van de actieve chip */
+  padding: 6px 6px 14px; margin: -6px -6px -14px;
+}
 .chip { white-space: nowrap; padding: 7px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; color: var(--muted); border: 1px solid var(--border); transition: all 0.25s var(--ease-out); }
 .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 6px 18px -6px rgba(139, 108, 255, 0.8); }
 .deck-empty { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; text-align: center; padding: 24px; border: 2px dashed var(--border); border-radius: 22px; }
@@ -383,8 +390,10 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .swipe-card:active { cursor: grabbing; }
 @keyframes card-in { from { transform: scale(0.94) translateY(16px); } }
 .swipe-card.behind {
+  /* Precies achter de bovenste kaart: geen randjes eronder, pas zichtbaar tijdens het slepen */
   pointer-events: none; animation: none; transition: transform 0.4s var(--spring), filter 0.4s;
-  transform: translateY(calc(var(--depth) * 14px)) scale(calc(1 - var(--depth) * 0.05)); filter: brightness(calc(1 - var(--depth) * 0.25));
+  transform: scale(calc(1 - var(--depth) * 0.04)); filter: brightness(calc(1 - var(--depth) * 0.2));
+  box-shadow: none;
 }
 .swipe-card img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 .swipe-card-empty { height: 100%; display: grid; place-items: center; font-size: 4rem; }
