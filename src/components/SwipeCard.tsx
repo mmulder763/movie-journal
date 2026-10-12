@@ -3,7 +3,7 @@ import type { SearchResult } from '../types'
 import { posterUrl } from '../lib/tmdb'
 import { Scores } from './Scores'
 
-export type SwipeVerdict = 'seen' | 'skip' | 'love' | 'cinema' | 'watchlist'
+export type SwipeVerdict = 'seen' | 'skip' | 'watchlist'
 
 export interface SwipeCardHandle {
   fly: (verdict: SwipeVerdict) => void
@@ -22,8 +22,6 @@ export function SwipeCard({ card, onDecide, ref }: Props) {
   const el = useRef<HTMLDivElement>(null)
   const drag = useRef<{ x: number; y: number; dx: number; dy: number } | null>(null)
   const done = useRef(false)
-  // Bioscoop (omlaag swipen) kan alleen bij films
-  const canCinema = card.mediaType === 'movie'
 
   const setPose = (dx: number, dy: number, animate: boolean) => {
     const node = el.current
@@ -33,22 +31,19 @@ export function SwipeCard({ card, onDecide, ref }: Props) {
     // Stempels ("GEZIEN"/"NOPE"/"FAVORIET") laten meekleuren met de richting
     node.style.setProperty('--drag-seen', String(Math.max(0, Math.min(1, dx / THRESHOLD))))
     node.style.setProperty('--drag-skip', String(Math.max(0, Math.min(1, -dx / THRESHOLD))))
-    node.style.setProperty('--drag-love', String(Math.max(0, Math.min(1, -dy / THRESHOLD - Math.abs(dx) / THRESHOLD))))
-    if (canCinema) node.style.setProperty('--drag-cinema', String(Math.max(0, Math.min(1, dy / THRESHOLD - Math.abs(dx) / THRESHOLD))))
+    node.style.setProperty('--drag-watchlist', String(Math.max(0, Math.min(1, -dy / THRESHOLD - Math.abs(dx) / THRESHOLD))))
   }
 
   const fly = (verdict: SwipeVerdict) => {
-    if (done.current || (verdict === 'cinema' && !canCinema)) return
+    if (done.current) return
     done.current = true
     const w = window.innerWidth
     if (verdict === 'seen') setPose(w, 60, true)
     else if (verdict === 'skip') setPose(-w, 60, true)
-    else if (verdict === 'love') setPose(0, -window.innerHeight, true)
-    else if (verdict === 'watchlist') {
+    else {
+      setPose(0, -window.innerHeight, true)
       el.current?.style.setProperty('--drag-watchlist', '1')
-      setPose(w * 0.5, -window.innerHeight, true)
     }
-    else setPose(0, window.innerHeight, true)
     setTimeout(() => onDecide(verdict), FLY_MS - 60)
   }
 
@@ -74,8 +69,7 @@ export function SwipeCard({ card, onDecide, ref }: Props) {
     if (!d) return
     if (d.dx > THRESHOLD) fly('seen')
     else if (d.dx < -THRESHOLD) fly('skip')
-    else if (d.dy < -THRESHOLD) fly('love')
-    else if (d.dy > THRESHOLD && canCinema) fly('cinema')
+    else if (d.dy < -THRESHOLD) fly('watchlist')
     else setPose(0, 0, true)
   }
 
@@ -93,8 +87,6 @@ export function SwipeCard({ card, onDecide, ref }: Props) {
       <CardFace card={card} img={img} withScores />
       <span className="stamp stamp-seen">Gezien</span>
       <span className="stamp stamp-skip">Nope</span>
-      <span className="stamp stamp-love">Favoriet</span>
-      <span className="stamp stamp-cinema">Bios</span>
       <span className="stamp stamp-watchlist">Watchlist</span>
     </div>
   )

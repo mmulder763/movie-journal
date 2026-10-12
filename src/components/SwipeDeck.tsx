@@ -124,9 +124,7 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
       if (e.key === 'ArrowRight') top.current?.fly('seen')
       else if (e.key === 'ArrowLeft') top.current?.fly('skip')
-      else if (e.key === 'ArrowUp') top.current?.fly('love')
-      else if (e.key === 'ArrowDown') top.current?.fly('cinema')
-      else if (e.key === 'w') top.current?.fly('watchlist')
+      else if (e.key === 'ArrowUp') top.current?.fly('watchlist')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -140,7 +138,7 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
         <span className="eyebrow">Al eens gezien?</span>
         <h2>Swipe je filmgeschiedenis bij elkaar</h2>
         <p className="muted small">
-          Rechts = gezien · links = niet gezien · omhoog = favoriet · omlaag = in de bios · 🔖 = wil ik zien. Films komen op hun NL-bioscoopdatum te staan.
+          Rechts = gezien · links = niet gezien · omhoog = op je watchlist. Films komen op hun NL-bioscoopdatum te staan.
         </p>
       </div>
 
@@ -202,9 +200,6 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
       <div className="swipe-actions">
         <button className="round-btn undo" onClick={undo} disabled={history.length === 0} aria-label="Ongedaan maken">↺</button>
         <button className="round-btn skip" onClick={() => top.current?.fly('skip')} disabled={!visible.length} aria-label="Niet gezien">✕</button>
-        <button className="round-btn love" onClick={() => top.current?.fly('love')} disabled={!visible.length} aria-label="Favoriet">★</button>
-        <button className="round-btn cinema" onClick={() => top.current?.fly('cinema')}
-          disabled={visible[0]?.mediaType !== 'movie'} aria-label="In de bioscoop gezien">🎟️</button>
         <button className="round-btn watch" onClick={() => top.current?.fly('watchlist')} disabled={!visible.length}
           aria-label="Op de watchlist" title="Wil ik nog zien">🔖</button>
         <button className="round-btn seen" onClick={() => top.current?.fly('seen')} disabled={!visible.length} aria-label="Gezien">✓</button>

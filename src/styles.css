@@ -754,14 +754,14 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 @keyframes reveal { 0% { transform: scale(0.85) rotate(-4deg); } 60% { transform: scale(1.08) rotate(2deg); } }
 .random-pick h3 { font-family: var(--display); font-size: 2rem; line-height: 1; min-height: 1em; animation: rise 0.5s var(--ease-out); }
 .random-actions { display: flex; gap: 8px; }
-.stamp-watchlist { top: 34px; left: 50%; color: var(--tv); transform: translateX(-50%) rotate(-4deg); opacity: var(--drag-watchlist, 0); }
-.round-btn.watch { width: 46px; height: 46px; font-size: 1.15rem; }
+.stamp-watchlist { top: 40%; left: 50%; color: var(--tv); transform: translateX(-50%) rotate(-6deg) scale(calc(0.6 + var(--drag-watchlist, 0) * 0.4)); opacity: var(--drag-watchlist, 0); }
+.round-btn.watch { width: 54px; height: 54px; font-size: 1.3rem; }
 .round-btn.watch:not(:disabled):hover { box-shadow: 0 0 0 2px var(--tv), 0 0 30px -4px var(--tv); }
 @media (max-width: 600px) {
   .tabs-bottom button { padding: 10px 12px; gap: 5px; font-size: 0.8rem; }
   .swipe-actions { gap: 7px; }
   .round-btn { width: 52px; height: 52px; }
-  .round-btn.love, .round-btn.cinema, .round-btn.watch { width: 44px; height: 44px; }
+  .round-btn.watch { width: 48px; height: 48px; }
   .round-btn.undo { width: 38px; height: 38px; }
 }
 

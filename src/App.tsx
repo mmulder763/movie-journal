@@ -142,8 +142,6 @@ export default function App({ backend, onOpenSettings }: AppProps) {
       if (verdict === 'skip') return dispatch({ type: 'skip', key: titleKey(card) })
       if (verdict === 'watchlist') return addToWatchlist(card)
       const entry = entryFromResult(card, null)
-      if (verdict === 'love') entry.rating = 5
-      if (verdict === 'cinema') entry.cinema = true
       const key = titleKey(card)
       swipedEntries.current.set(key, entry.id)
       dispatch({ type: 'upsert', entry })
@@ -158,7 +156,7 @@ export default function App({ backend, onOpenSettings }: AppProps) {
         .then((date) => {
           if (swipedEntries.current.get(key) !== entry.id || !date) return
           dispatch({ type: 'upsert', entry: { ...entry, date } })
-          notify(`${verdict === 'cinema' ? '🎟️' : '📅'} ${card.title} geplot op ${formatLongDate(date)}`)
+          notify(`📅 ${card.title} geplot op ${formatLongDate(date)}`)
         })
         .catch((err) => notify(`Bioscoopdatum ophalen mislukt: ${(err as Error).message}`))
     },
