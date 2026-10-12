@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs>
+    <filter id="blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="46"/></filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.55"/></filter>
+    <linearGradient id="hue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ff7bf"/><stop offset="0.5" stop-color="#14b8a6"/><stop offset="1" stop-color="#8b6cff"/></linearGradient>
+    <radialGradient id="bg" cx="0.3" cy="0.2" r="1"><stop offset="0" stop-color="#0e3326"/><stop offset="0.6" stop-color="#06120e"/><stop offset="1" stop-color="#030806"/></radialGradient>
+
+ <linearGradient id="beam" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#eafff6" stop-opacity="0.95"/><stop offset="1" stop-color="#3ee8a0" stop-opacity="0.05"/></linearGradient>
+ <linearGradient id="screen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7cf8c6"/><stop offset="0.5" stop-color="#14b8a6"/><stop offset="1" stop-color="#8b6cff"/></linearGradient>
+ <filter id="beamblur"><feGaussianBlur stdDeviation="6"/></filter>
+ <clipPath id="sq"><rect width="512" height="512" rx="116"/></clipPath></defs>
+ <g clip-path="url(#sq)"><rect width="512" height="512" fill="#030806"/>
+  <circle cx="330" cy="200" r="190" fill="#14b8a6" opacity="0.4" filter="url(#blur)"/>
+  <path d="M112 412 L250 128 L430 128 L430 300 Z" fill="url(#beam)" opacity="0.5" filter="url(#beamblur)"/>
+  <rect x="236" y="112" width="210" height="200" rx="26" fill="url(#screen)" filter="url(#soft)"/>
+  <rect x="236" y="112" width="210" height="200" rx="26" fill="none" stroke="#fff" stroke-opacity="0.35" stroke-width="3"/>
+  <path d="M318 172v80l66-40z" fill="#04100c" stroke="#04100c" stroke-width="14" stroke-linejoin="round"/>
+  <circle cx="112" cy="412" r="34" fill="#eafff6"/>
+  <circle cx="112" cy="412" r="70" fill="#eafff6" opacity="0.35" filter="url(#blur)"/>
+ </g><rect x="1.5" y="1.5" width="509" height="509" rx="115" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-width="3"/></svg>

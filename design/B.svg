@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs>
+    <filter id="blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="46"/></filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.55"/></filter>
+    <linearGradient id="hue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ff7bf"/><stop offset="0.5" stop-color="#14b8a6"/><stop offset="1" stop-color="#8b6cff"/></linearGradient>
+    <radialGradient id="bg" cx="0.3" cy="0.2" r="1"><stop offset="0" stop-color="#0e3326"/><stop offset="0.6" stop-color="#06120e"/><stop offset="1" stop-color="#030806"/></radialGradient>
+
+ <linearGradient id="ribbon" x1="0" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#7cf8c6"/><stop offset="0.45" stop-color="#18c2a5"/><stop offset="1" stop-color="#7a5cff"/></linearGradient>
+ <linearGradient id="gloss" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0.35"/><stop offset="0.5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <mask id="cut"><rect width="512" height="512" fill="#fff"/><path d="M226 196v104l86-52z" fill="#000" stroke="#000" stroke-width="18" stroke-linejoin="round"/></mask>
+ <clipPath id="sq"><rect width="512" height="512" rx="116"/></clipPath></defs>
+ <g clip-path="url(#sq)"><rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="170" cy="130" r="180" fill="#3ee8a0" opacity="0.35" filter="url(#blur)"/>
+  <circle cx="360" cy="420" r="180" fill="#8b6cff" opacity="0.4" filter="url(#blur)"/></g>
+ <g filter="url(#soft)" mask="url(#cut)">
+  <path d="M162 92h188a24 24 0 0 1 24 24v318l-118-78-118 78V116a24 24 0 0 1 24-24z" fill="url(#ribbon)"/>
+  <path d="M162 92h94v264l-118 78V116a24 24 0 0 1 24-24z" fill="url(#gloss)"/>
+ </g><rect x="1.5" y="1.5" width="509" height="509" rx="115" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-width="3"/></svg>

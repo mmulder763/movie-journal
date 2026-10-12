@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs>
+    <filter id="blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="46"/></filter>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.55"/></filter>
+    <linearGradient id="hue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ff7bf"/><stop offset="0.5" stop-color="#14b8a6"/><stop offset="1" stop-color="#8b6cff"/></linearGradient>
+    <radialGradient id="bg" cx="0.3" cy="0.2" r="1"><stop offset="0" stop-color="#0e3326"/><stop offset="0.6" stop-color="#06120e"/><stop offset="1" stop-color="#030806"/></radialGradient>
+
+ <radialGradient id="shine" cx="0.35" cy="0.25" r="0.8"><stop offset="0" stop-color="#fff" stop-opacity="0.35"/><stop offset="0.5" stop-color="#fff" stop-opacity="0"/></radialGradient>
+ <clipPath id="sq"><rect width="512" height="512" rx="116"/></clipPath></defs>
+ <g clip-path="url(#sq)"><rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="190" fill="#14b8a6" opacity="0.45" filter="url(#blur)"/></g>
+ <g filter="url(#soft)">
+  <circle cx="256" cy="256" r="182" fill="#071510"/>
+  <g stroke="#071510" stroke-width="7" stroke-linejoin="round"><path d="M274.1 188.4 L323.6 237.9 L409.7 323.9 A168 168 0 0 0 391.7 156.9 Z" fill="#6ff7bf"/><path d="M323.6 237.9 L305.5 305.5 L274.0 423.0 A168 168 0 0 0 409.7 323.9 Z" fill="#3ee8a0"/><path d="M305.5 305.5 L237.9 323.6 L120.3 355.1 A168 168 0 0 0 274.0 423.0 Z" fill="#14b8a6"/><path d="M237.9 323.6 L188.4 274.1 L102.3 188.1 A168 168 0 0 0 120.3 355.1 Z" fill="#1fa3c9"/><path d="M188.4 274.1 L206.5 206.5 L238.0 89.0 A168 168 0 0 0 102.3 188.1 Z" fill="#5b7cff"/><path d="M206.5 206.5 L274.1 188.4 L391.7 156.9 A168 168 0 0 0 238.0 89.0 Z" fill="#8b6cff"/></g>
+  <circle cx="256" cy="256" r="168" fill="url(#shine)"/>
+  <circle cx="256" cy="256" r="182" fill="none" stroke="url(#hue)" stroke-width="5" opacity="0.7"/>
+  <path d="M240 232v48l42-24z" fill="#eafff6" stroke="#eafff6" stroke-width="10" stroke-linejoin="round"/>
+ </g><rect x="1.5" y="1.5" width="509" height="509" rx="115" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-width="3"/></svg>

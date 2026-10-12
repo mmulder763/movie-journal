@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs>
+ <filter id="blur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="46"/></filter>
+ <filter id="soft" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000" flood-opacity="0.55"/></filter>
+ <radialGradient id="bg" cx="0.3" cy="0.2" r="1"><stop offset="0" stop-color="#0e3326"/><stop offset="0.6" stop-color="#06120e"/><stop offset="1" stop-color="#030806"/></radialGradient>
+ <linearGradient id="main" x1="0" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#7cf8c6"/><stop offset="0.45" stop-color="#18c2a5"/><stop offset="1" stop-color="#7a5cff"/></linearGradient>
+ <linearGradient id="gloss" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0.32"/><stop offset="0.55" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <linearGradient id="ribbon2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a48bff"/><stop offset="1" stop-color="#ff7ab6"/></linearGradient>
+ <linearGradient id="ring" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#bfeedd"/></linearGradient>
+ <clipPath id="squircle"><rect width="512" height="512" rx="116"/></clipPath>
+<mask id="cut"><rect width="512" height="512" fill="#fff"/><path d="M185.3 258.0v108.0l95.0 -54.0z" fill="#000" stroke="#000" stroke-width="18" stroke-linejoin="round"/></mask></defs>
+ <g clip-path="url(#squircle)"><rect width="512" height="512" fill="url(#bg)"/>
+  <circle cx="160" cy="120" r="180" fill="#3ee8a0" opacity="0.35" filter="url(#blur)"/>
+  <circle cx="370" cy="430" r="180" fill="#8b6cff" opacity="0.4" filter="url(#blur)"/></g>
+
+
+ <!-- kalender + lint -->
+ <g filter="url(#soft)">
+  <g mask="url(#cut)">
+   <rect x="100" y="132" width="312" height="284" rx="52" fill="url(#main)"/>
+   <path d="M100 184a52 52 0 0 1 52-52h208a52 52 0 0 1 52 52v24H100z" fill="#03140c" opacity="0.28"/>
+   <rect x="100" y="132" width="156.0" height="284" rx="52" fill="url(#gloss)"/>
+  </g>
+  <path d="M326 200h46v268l-23-18-23 18z" fill="url(#ribbon2)"/>
+  <rect x="178" y="94" width="28" height="76" rx="14" fill="url(#ring)"/><rect x="306" y="94" width="28" height="76" rx="14" fill="url(#ring)"/>
+ </g>
+ <rect x="1.5" y="1.5" width="509" height="509" rx="115" fill="none" stroke="#fff" stroke-opacity="0.08" stroke-width="3"/></svg>
