@@ -108,7 +108,14 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 @keyframes page-in { from { opacity: 0; transform: translateY(10px); filter: blur(4px); } }
 
 /* Layout */
-.app { max-width: 1200px; margin: 0 auto; padding: env(safe-area-inset-top) 16px calc(110px + env(safe-area-inset-bottom)); }
+.app {
+  max-width: 1200px; margin: 0 auto;
+  /* Ruimte voor notch/Dynamic Island + statusbalk (de PWA tekent eronder door) */
+  padding: calc(env(safe-area-inset-top) + 8px) max(16px, env(safe-area-inset-right)) calc(110px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+}
+@media (max-width: 899px) {
+  .app { padding-top: calc(env(safe-area-inset-top) + 20px); }
+}
 .app-header { display: flex; align-items: center; gap: 16px; padding: 16px 0; }
 .logo { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 1.9rem; letter-spacing: 0.04em; line-height: 1; }
 .logo em { font-style: normal; color: var(--accent); }
@@ -824,7 +831,7 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 
 /* Koppelen / opstarten */
 .boot { min-height: 100dvh; display: grid; place-items: center; }
-.setup { min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; }
+.setup { min-height: 100dvh; display: grid; place-items: center; padding: calc(env(safe-area-inset-top) + 24px) 16px calc(env(safe-area-inset-bottom) + 24px); }
 .setup-card {
   width: min(100%, 440px); display: grid; gap: 14px; padding: 28px; border-radius: 26px;
   background: rgba(12, 18, 16, 0.75); border: 1px solid var(--border); box-shadow: var(--shadow);
