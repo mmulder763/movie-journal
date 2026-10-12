@@ -150,7 +150,7 @@ export function NowShowing({ titles, friends, knownKeys, onOpen, onOpenFriend, o
           </>
         ) : (
           <>
-            <span className="eyebrow">Welkom in je bioscoop</span>
+            <span className="eyebrow">Welkom in je journal</span>
             <h2 className="marquee-title">Wat heb je vandaag gekeken?</h2>
             <button className="btn-primary marquee-btn" onClick={onAdd}>+ Eerste film toevoegen</button>
           </>

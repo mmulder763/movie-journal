@@ -82,10 +82,19 @@ function shuffle<T>(items: T[]): T[] {
 
 const pick = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)]
 
-// Discover: alleen titels met genoeg stemmen, zodat de stapel vooral herkenbare films/series bevat
-const DISCOVER: Record<MediaType, Record<string, string>> = {
-  movie: { 'vote_count.gte': '400', include_adult: 'false', sort_by: 'popularity.desc' },
-  tv: { 'vote_count.gte': '200', include_adult: 'false', sort_by: 'popularity.desc' },
+// Discover kan per zoekopdracht maar 500 pagina's diep; met een willekeurig jaar en een willekeurige
+// sortering komt de stapel overal in de catalogus uit, niet alleen bij de bekendste titels
+const SORTS = ['popularity.desc', 'popularity.asc', 'vote_average.desc', 'vote_count.desc', 'primary_release_date.desc', 'original_title.asc']
+const FIRST_YEAR = 1920
+
+function randomDiscover(type: MediaType): Record<string, string> {
+  const year = FIRST_YEAR + Math.floor(Math.random() * (new Date().getFullYear() - FIRST_YEAR + 1))
+  const sort = pick(SORTS).replace('primary_release_date', type === 'tv' ? 'first_air_date' : 'primary_release_date')
+  return {
+    include_adult: 'false',
+    sort_by: type === 'tv' && sort === 'original_title.asc' ? 'name.asc' : sort,
+    [type === 'tv' ? 'first_air_date_year' : 'primary_release_year']: String(year),
+  }
 }
 
 /** Aantal pagina's per lijst (eenmalig opgehaald), zodat we een willekeurige pagina kunnen kiezen */
@@ -123,13 +132,14 @@ async function randomPage(list: 'discover' | 'popular' | 'top', type: MediaType,
       ? [`/${type}/popular`, {}, 100]
       : list === 'top'
         ? [`/${type}/top_rated`, {}, 100]
-        : [`/discover/${type}`, DISCOVER[type], 500]
+        : [`/discover/${type}`, randomDiscover(type), 500]
 
   const total = await pagesFor(path, params, cap)
-  const free = Array.from({ length: total }, (_, i) => i + 1).filter((n) => !used.has(`${path}:${n}`))
+  const listKey = `${path}?${new URLSearchParams(params)}`
+  const free = Array.from({ length: total }, (_, i) => i + 1).filter((n) => !used.has(`${listKey}:${n}`))
   if (free.length === 0) return []
   const page = pick(free)
-  used.add(`${path}:${page}`)
+  used.add(`${listKey}:${page}`)
 
   const data = await request<{ results: ApiResult[] }>(path, { ...params, page: String(page) })
   return data.results.filter((r) => r.poster_path).map((r) => toResult(r, type))
