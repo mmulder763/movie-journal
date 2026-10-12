@@ -25,6 +25,19 @@ const relative = (iso: string) => {
   return new Date(`${iso}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
 }
 
+/** Uitnodigingstekst bij delen (de link zelf gaat er los bij) */
+const inviteText = (name: string) =>
+  `🎬 ${name.split(' ')[0]} nodigt je uit voor Movie Journal!
+
+Een dagboek voor alles wat je kijkt:
+📅 Een agenda met welke film of aflevering je op welke dag zag
+⭐ Ratings en notities, plus IMDb- en Rotten Tomatoes-scores
+🔥 Swipe je filmgeschiedenis bij elkaar (gezien / niet gezien / watchlist)
+🔖 Een watchlist met waar je het in Nederland kunt streamen
+👀 Zie wat vrienden kijken en hoe goed jullie smaak matcht
+
+Gratis, werkt op je telefoon als app. Maak een account:`
+
 const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
 export function Avatar({ profile, size = 40 }: { profile: Profile; size?: number }) {
@@ -50,12 +63,12 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, notify, known
   }, [refresh])
 
   const share = async () => {
-    const text = `Doe mee met Movie Journal: ${inviteLink}`
+    // Link alleen als `url` meegeven: apps als WhatsApp plakken text + url achter elkaar
     try {
-      if (navigator.share) await navigator.share({ title: 'Movie Journal', text, url: inviteLink })
+      if (navigator.share) await navigator.share({ title: 'Movie Journal', text: inviteText(me.display_name), url: inviteLink })
       else {
-        await navigator.clipboard.writeText(inviteLink)
-        notify('🔗 Uitnodigingslink gekopieerd')
+        await navigator.clipboard.writeText(`${inviteText(me.display_name)}\n\n${inviteLink}`)
+        notify('🔗 Uitnodiging gekopieerd')
       }
     } catch { /* delen geannuleerd */ }
   }

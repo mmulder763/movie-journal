@@ -713,7 +713,17 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 
 /* Lijst: Gezien | Watchlist */
 .list-switch { display: flex; width: 100%; max-width: 420px; margin-bottom: 18px; padding: 4px; }
-.list-switch button { flex: 1; padding: 10px 14px; font-size: 0.92rem; }
+.list-switch { max-width: 520px; }
+.list-switch button { flex: 1; padding: 10px 8px; font-size: 0.88rem; white-space: nowrap; }
+@media (max-width: 400px) { .list-switch button { font-size: 0.8rem; padding: 10px 4px; } .list-switch .chip-count { margin-left: 2px; } }
+.notseen-actions { display: flex; gap: 6px; margin-top: 4px; }
+.notseen-actions button {
+  flex: 1; height: 32px; border-radius: 10px; font-size: 0.9rem; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border);
+  transition: background 0.15s, transform 0.15s var(--spring);
+}
+.notseen-actions button:hover { background: rgba(255, 255, 255, 0.12); }
+.notseen-actions button:active { transform: scale(0.92); }
+.notseen-actions button:first-child { color: var(--accent); }
 .chip-count { font-size: 0.72rem; font-weight: 700; opacity: 0.7; margin-left: 4px; }
 
 /* Watchlist */
@@ -833,6 +843,13 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 .setup-help ol { padding-left: 18px; line-height: 1.6; }
 .setup-help a { color: var(--text); }
 .settings-btn { font-size: 1.1rem; color: var(--muted); }
+.auth-features { list-style: none; margin: 0; padding: 12px 14px; display: grid; gap: 8px; border-radius: 14px; background: rgba(62, 232, 160, 0.06); border: 1px solid rgba(62, 232, 160, 0.18); }
+.auth-features li { display: flex; gap: 10px; font-size: 0.86rem; line-height: 1.35; animation: rise 0.4s var(--ease-out) both; }
+.auth-features li:nth-child(2) { animation-delay: 0.05s; }
+.auth-features li:nth-child(3) { animation-delay: 0.1s; }
+.auth-features li:nth-child(4) { animation-delay: 0.15s; }
+.auth-features li:nth-child(5) { animation-delay: 0.2s; }
+.auth-features span { width: 20px; flex-shrink: 0; text-align: center; }
 
 /* Toetsenbord open: tabbar weg, sheet mag bijna de hele zichtbare hoogte gebruiken */
 .keyboard-open .tabs-bottom { opacity: 0; pointer-events: none; transform: translate(-50%, 20px); }

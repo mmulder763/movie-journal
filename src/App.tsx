@@ -14,6 +14,7 @@ import { NowShowing, type MarqueeSlide } from './components/NowShowing'
 import { SwipeDeck, type SwipeAction } from './components/SwipeDeck'
 import { Intro } from './components/Intro'
 import { WatchlistView } from './components/WatchlistView'
+import { NotSeenView } from './components/NotSeenView'
 import { WatchItemSheet } from './components/WatchItemSheet'
 import { AgendaIcon, FriendsIcon, ListIcon, StatsIcon, SwipeIcon } from './components/Icons'
 import { Avatar, FriendsView } from './components/FriendsView'
@@ -105,7 +106,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   const watchlistKeys = useMemo(() => new Set(journal.watchlist.map(titleKey)), [journal.watchlist])
   /** Al gezien of al op de watchlist: dan geen "+ Watchlist"-knop tonen */
   const knownForWatchlist = useMemo(() => new Set([...journalKeys, ...watchlistKeys]), [journalKeys, watchlistKeys])
-  const [listMode, setListMode] = useState<'seen' | 'watchlist'>('seen')
+  const [listMode, setListMode] = useState<'seen' | 'watchlist' | 'notseen'>('seen')
   const [openWatchItem, setOpenWatchItem] = useState<WatchItem | null>(null)
   const [sharingMonth, setSharingMonth] = useState(false)
 
@@ -155,6 +156,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
     for (const entry of saved) dispatch({ type: 'upsert', entry })
     if (saved[0]) {
       leaveWatchlist(titleKey(saved[0]))
+      if (skippedKeys.has(titleKey(saved[0]))) dispatch({ type: 'unskip', key: titleKey(saved[0]) })
       if (saved[0].date) goToDate(saved[0].date)
     }
     if (saved.length > 1) notify(`📺 ${saved.length} afleveringen van ${saved[0].title} opgeslagen`)
@@ -168,7 +170,13 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
 
   const handleSwipe = useCallback(
     ({ card, verdict }: SwipeAction) => {
-      if (verdict === 'skip') return dispatch({ type: 'skip', key: titleKey(card) })
+      if (verdict === 'skip') {
+        return dispatch({
+          type: 'skip',
+          key: titleKey(card),
+          item: { tmdbId: card.tmdbId, mediaType: card.mediaType, title: card.title, posterPath: card.posterPath, backdropPath: card.backdropPath, year: card.year, addedAt: Date.now() },
+        })
+      }
       if (verdict === 'watchlist') return addToWatchlist(card)
       const entry = entryFromResult(card, null)
       const key = titleKey(card)
@@ -277,13 +285,30 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
                 Gezien <span className="chip-count">{titles.length}</span>
               </button>
               <button className={listMode === 'watchlist' ? 'active' : ''} onClick={() => setListMode('watchlist')}>
-                🔖 Watchlist <span className="chip-count">{journal.watchlist.length}</span>
+                Watchlist <span className="chip-count">{journal.watchlist.length}</span>
+              </button>
+              <button className={listMode === 'notseen' ? 'active' : ''} onClick={() => setListMode('notseen')}>
+                Niet gezien <span className="chip-count">{journal.skipped.length}</span>
               </button>
             </div>
             {listMode === 'seen' ? (
               <ListView titles={titles} onOpen={setOpenTitle} />
-            ) : (
+            ) : listMode === 'watchlist' ? (
               <WatchlistView items={journal.watchlist} seenKeys={journalKeys} onAdd={addToWatchlist} onOpen={setOpenWatchItem} />
+            ) : (
+              <NotSeenView
+                skipped={journal.skipped}
+                items={journal.skippedItems}
+                onSeen={(item) => setDialog({ initial: entryFromResult(item, today()), isNew: true })}
+                onWatchlist={(item) => {
+                  addToWatchlist(item)
+                  dispatch({ type: 'unskip', key: titleKey(item) })
+                }}
+                onRestore={(key) => {
+                  dispatch({ type: 'unskip', key })
+                  notify('↺ Kan weer in je swipe-stapel verschijnen')
+                }}
+              />
             )}
           </>
         )}

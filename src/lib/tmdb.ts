@@ -376,6 +376,11 @@ export async function fetchSeasonEpisodes(tvId: number, season: number): Promise
   }))
 }
 
+/** Basisgegevens van één titel (voor weggeswipete titels van vóór het opslaan van titelgegevens) */
+export async function fetchBasic(mediaType: MediaType, tmdbId: number): Promise<SearchResult> {
+  return toResult(await request<ApiResult>(`/${mediaType}/${tmdbId}`), mediaType)
+}
+
 export const profileUrl = (path: string | null) => (path ? `${IMAGE_BASE}/w185${path}` : null)
 export const logoUrl = (path: string) => `${IMAGE_BASE}/w92${path}`
 

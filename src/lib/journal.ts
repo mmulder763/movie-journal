@@ -2,7 +2,7 @@ import type { Entry, Journal, Op, WatchItem } from '../types.ts'
 
 // Gedeeld door de browser (optimistische updates) en de dev-server (data/journal.json).
 
-export const emptyJournal = (): Journal => ({ entries: [], skipped: [], watchlist: [] })
+export const emptyJournal = (): Journal => ({ entries: [], skipped: [], skippedItems: [], watchlist: [] })
 
 const keyOf = (t: { mediaType: string; tmdbId: number }) => `${t.mediaType}-${t.tmdbId}`
 
@@ -17,10 +17,18 @@ export function applyOp(journal: Journal, op: Op): Journal {
     }
     case 'delete':
       return { ...journal, entries: journal.entries.filter((e) => e.id !== op.id) }
-    case 'skip':
-      return journal.skipped.includes(op.key) ? journal : { ...journal, skipped: [...journal.skipped, op.key] }
+    case 'skip': {
+      const skipped = journal.skipped.includes(op.key) ? journal.skipped : [...journal.skipped, op.key]
+      const skippedItems =
+        op.item && !journal.skippedItems.some((w) => keyOf(w) === op.key) ? [op.item, ...journal.skippedItems] : journal.skippedItems
+      return { ...journal, skipped, skippedItems }
+    }
     case 'unskip':
-      return { ...journal, skipped: journal.skipped.filter((k) => k !== op.key) }
+      return {
+        ...journal,
+        skipped: journal.skipped.filter((k) => k !== op.key),
+        skippedItems: journal.skippedItems.filter((w) => keyOf(w) !== op.key),
+      }
     case 'watchlist-add':
       return journal.watchlist.some((w) => keyOf(w) === keyOf(op.item))
         ? journal
@@ -51,6 +59,7 @@ export function normalizeJournal(data: unknown): Journal {
   return {
     entries: raw.entries.map((e) => ({ ...e, date: e.date || null })),
     skipped: Array.isArray(raw.skipped) ? raw.skipped.filter((k): k is string => typeof k === 'string') : [],
+    skippedItems: Array.isArray(raw.skippedItems) ? raw.skippedItems.filter(isWatchItem) : [],
     watchlist: Array.isArray(raw.watchlist) ? raw.watchlist.filter(isWatchItem) : [],
   }
 }

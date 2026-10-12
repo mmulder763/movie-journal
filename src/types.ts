@@ -38,13 +38,15 @@ export interface Journal {
   entries: Entry[]
   /** Titel-keys ("movie-123") die bij het swipen als "niet gezien" zijn weggeswipet */
   skipped: string[]
+  /** Titelgegevens bij `skipped`, voor de lijst "Niet gezien" (oudere skips hebben er geen) */
+  skippedItems: WatchItem[]
   watchlist: WatchItem[]
 }
 
 export type Op =
   | { type: 'upsert'; entry: Entry }
   | { type: 'delete'; id: string }
-  | { type: 'skip'; key: string }
+  | { type: 'skip'; key: string; item?: WatchItem }
   | { type: 'unskip'; key: string }
   | { type: 'watchlist-add'; item: WatchItem }
   | { type: 'watchlist-remove'; key: string }

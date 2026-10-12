@@ -44,9 +44,18 @@ export function Auth({ inviteFrom }: { inviteFrom?: string | null }) {
         <img className="setup-logo" src={`${import.meta.env.BASE_URL}icon.svg`} alt="" />
         <h1>Movie <em>Journal</em></h1>
         {inviteFrom ? (
-          <p className="muted"><strong>@{inviteFrom}</strong> nodigt je uit. Maak een account aan om elkaars films te zien.</p>
+          <p className="muted"><strong>@{inviteFrom}</strong> nodigt je uit. Maak een account aan en zie elkaars films en series.</p>
         ) : (
-          <p className="muted">Houd bij wat je kijkt en zie wat je vrienden kijken.</p>
+          <p className="muted">Een dagboek voor alles wat je kijkt, samen met je vrienden.</p>
+        )}
+        {mode === 'signup' && (
+          <ul className="auth-features">
+            <li><span>📅</span>Agenda van wat je op welke dag zag, per film of aflevering</li>
+            <li><span>⭐</span>Ratings, notities en IMDb/Rotten Tomatoes-scores</li>
+            <li><span>🔥</span>Swipe je filmgeschiedenis bij elkaar</li>
+            <li><span>🔖</span>Watchlist met waar je het kunt streamen</li>
+            <li><span>👀</span>Zie wat vrienden kijken en jullie smaakmatch</li>
+          </ul>
         )}
 
         <div className="segmented auth-switch">

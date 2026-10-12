@@ -40,7 +40,7 @@ export function useSocial(me: Profile | null): SocialState {
         (profiles ?? [])
           .map((p) => {
             const j = byUser.get(p.id)
-            let journal: Journal = { entries: [], skipped: [], watchlist: [] }
+            let journal: Journal = { entries: [], skipped: [], skippedItems: [], watchlist: [] }
             try {
               if (j) journal = normalizeJournal(j.data)
             } catch (err) {
