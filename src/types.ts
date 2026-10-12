@@ -46,6 +46,8 @@ export interface Journal {
 export type Op =
   | { type: 'upsert'; entry: Entry }
   | { type: 'delete'; id: string }
+  /** Velden van een bestaande entry aanpassen (zonder de rest te overschrijven) */
+  | { type: 'patch'; id: string; patch: Partial<Omit<Entry, 'id'>> }
   | { type: 'skip'; key: string; item?: WatchItem }
   | { type: 'unskip'; key: string }
   | { type: 'watchlist-add'; item: WatchItem }

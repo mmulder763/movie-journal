@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
 import type { Entry, MediaType, TitleSummary } from '../types'
 import type { Friend } from '../lib/social'
 import { backdropUrl, posterUrl } from '../lib/tmdb'
@@ -33,11 +33,19 @@ interface Props {
   onSlideChange?: (slide: MarqueeSlide | undefined) => void
 }
 
-const shortDate = (iso: string) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })
+/** "vandaag", "gisteren", "3 dagen geleden" of de volledige datum */
+function whenLabel(iso: string | null) {
+  if (!iso) return 'Ooit (datum onbekend)'
+  const date = new Date(`${iso}T12:00:00`)
+  const days = Math.round((Date.now() - date.getTime()) / 86_400_000)
+  if (days === 0) return 'Vandaag'
+  if (days === 1) return 'Gisteren'
+  if (days > 1 && days < 7) return `${days} dagen geleden`
+  return date.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(/^./, (c) => c.toUpperCase())
+}
 
 const SLIDE_MS = 7000
-const MAX_SLIDES = 8
+const MAX_SLIDES = 4
 
 const fromEntry = (e: Entry, friend: Friend): MarqueeSlide => ({
   key: `${friend.id}-${e.id}`,
@@ -89,19 +97,42 @@ export function NowShowing({ titles, friends, onOpenSlide, onAdd, onSlideChange 
       .slice(0, MAX_SLIDES)
   }, [titles, friends])
   const [index, setIndex] = useState(0)
+  // Na handmatig vegen de automatische wissel opnieuw laten starten
+  const [interacted, setInteracted] = useState(0)
 
   useEffect(() => {
     if (slides.length < 2) return
     const timer = setInterval(() => setIndex((i) => (i + 1) % slides.length), SLIDE_MS)
     return () => clearInterval(timer)
-  }, [slides.length])
+  }, [slides.length, interacted])
+
+  // Horizontaal vegen wisselt van slide; een korte tik opent de details
+  const swipe = useRef<{ x: number; y: number; moved: boolean } | null>(null)
+  const go = (delta: number) => {
+    setIndex((i) => (i + delta + slides.length) % slides.length)
+    setInteracted((n) => n + 1)
+  }
+  const onPointerDown = (e: PointerEvent) => (swipe.current = { x: e.clientX, y: e.clientY, moved: false })
+  const onPointerUp = (e: PointerEvent) => {
+    const s0 = swipe.current
+    if (!s0) return
+    const dx = e.clientX - s0.x
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(e.clientY - s0.y) && slides.length > 1) {
+      s0.moved = true
+      go(dx < 0 ? 1 : -1)
+    }
+  }
 
   const current = slides[index % Math.max(1, slides.length)]
   useEffect(() => onSlideChange?.(current), [current, onSlideChange])
 
   return (
     <section className={`marquee ${current ? 'clickable' : ''}`} role={current ? 'button' : undefined} tabIndex={current ? 0 : undefined}
-      onClick={(e) => current && !(e.target as HTMLElement).closest('.marquee-dots') && onOpenSlide(current)}
+      onPointerDown={onPointerDown} onPointerUp={onPointerUp}
+      onClick={(e) => {
+        if (swipe.current?.moved) return // dat was een veeg, geen tik
+        if (current && !(e.target as HTMLElement).closest('.marquee-dots')) onOpenSlide(current)
+      }}
       onKeyDown={(e) => current && (e.key === 'Enter' || e.key === ' ') && onOpenSlide(current)}>
       <div className="marquee-slides">
         {slides.map((s, i) => (
@@ -122,10 +153,10 @@ export function NowShowing({ titles, friends, onOpenSlide, onAdd, onSlideChange 
                   <span><strong>{current.friend.display_name}</strong> keek dit</span>
                 </>
               ) : (
-                <span className="eyebrow">Now showing</span>
+                <span className="eyebrow">Jij keek dit</span>
               )}
-              <span className="muted small">{current.date ? shortDate(current.date) : 'ooit gezien'}</span>
             </span>
+            <span className="marquee-when">📅 {whenLabel(current.date)}</span>
             <h2 className="marquee-title">{current.title}</h2>
             <div className="meta-line">
               <span className={`badge badge-${current.mediaType}`}>{current.mediaType === 'tv' ? 'Serie' : 'Film'}</span>
@@ -146,7 +177,7 @@ export function NowShowing({ titles, friends, onOpenSlide, onAdd, onSlideChange 
         <div className="marquee-dots">
           {slides.map((s, i) => (
             <button key={s.key} className={i === index % slides.length ? 'active' : ''}
-              onClick={() => setIndex(i)} aria-label={s.title} />
+              onClick={() => { setIndex(i); setInteracted((n) => n + 1) }} aria-label={s.title} />
           ))}
         </div>
       )}

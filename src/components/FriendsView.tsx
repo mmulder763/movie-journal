@@ -2,7 +2,7 @@ import { useEffect, useMemo, type CSSProperties } from 'react'
 import type { Entry } from '../types'
 import type { Profile } from '../lib/supabase'
 import { tasteMatch, type Friend, type SocialState } from '../lib/social'
-import { compareDatesDesc, titleKey } from '../lib/titles'
+import { summarizeTitles } from '../lib/titles'
 import { Poster } from './Poster'
 import { StarRating } from './StarRating'
 
@@ -11,18 +11,9 @@ interface Props {
   myEntries: Entry[]
   social: SocialState
   onOpenFriend: (friend: Friend) => void
+  /** Tik op een item in de feed: details van die titel, vanuit die vriend */
+  onOpenTitle: (entry: Entry, friend: Friend) => void
   notify: (text: string) => void
-  /** Al gezien of al op je watchlist */
-  knownKeys: Set<string>
-  onAddToWatchlist: (entry: Entry) => void
-}
-
-const relative = (iso: string) => {
-  const days = Math.round((Date.now() - new Date(`${iso}T12:00:00`).getTime()) / 86_400_000)
-  if (days <= 0) return 'vandaag'
-  if (days === 1) return 'gisteren'
-  if (days < 7) return `${days} dagen geleden`
-  return new Date(`${iso}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
 }
 
 /** Uitnodigingstekst bij delen (de link zelf gaat er los bij) */
@@ -53,7 +44,33 @@ export function Avatar({ profile, size = 40 }: { profile: Profile; size?: number
   )
 }
 
-export function FriendsView({ me, myEntries, social, onOpenFriend, notify, knownKeys, onAddToWatchlist }: Props) {
+/** Korte samenvatting van iemands journal: "12 films · 5 series · ★ 4.1" */
+export function journalSummary(entries: Entry[]) {
+  const titles = summarizeTitles(entries)
+  const movies = titles.filter((t) => t.mediaType === 'movie').length
+  const ratings = entries.flatMap((e) => (e.rating ? [e.rating] : []))
+  const parts = [`${movies} ${movies === 1 ? 'film' : 'films'}`, `${titles.length - movies} series`]
+  if (ratings.length) parts.push(`★ ${(ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)}`)
+  return parts.join(' · ')
+}
+
+const DAY = 86_400_000
+
+/** Feed-groep op basis van wanneer iets gelogd is */
+function bucket(loggedAt: number) {
+  const startOfToday = new Date().setHours(0, 0, 0, 0)
+  if (loggedAt >= startOfToday) return 'Vandaag'
+  if (loggedAt >= startOfToday - DAY) return 'Gisteren'
+  if (loggedAt >= startOfToday - 6 * DAY) return 'Deze week'
+  return 'Eerder'
+}
+
+const watchedLabel = (date: string | null) => {
+  if (!date) return 'ooit gezien'
+  return `gezien op ${new Date(`${date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })}`
+}
+
+export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, notify }: Props) {
   const inviteLink = `${location.origin}${import.meta.env.BASE_URL}?vriend=${me.username}`
 
   // Bij openen van de tab altijd verse stand ophalen
@@ -73,51 +90,68 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, notify, known
     } catch { /* delen geannuleerd */ }
   }
 
-  // Feed: wat vrienden het laatst hebben gelogd (op logmoment, zodat geswipete oude films niet wegzakken)
-  const feed = useMemo(
+  // Vrienden met de meest recente activiteit bovenaan
+  const friends = useMemo(
     () =>
       social.friends
-        .flatMap((f) => f.journal.entries.map((entry) => ({ friend: f, entry })))
-        .sort((a, b) => b.entry.createdAt - a.entry.createdAt)
-        .slice(0, 40),
-    [social.friends],
+        .map((f) => ({ friend: f, lastLogged: Math.max(0, ...f.journal.entries.map((e) => e.createdAt)), match: tasteMatch(myEntries, f.journal.entries) }))
+        .sort((a, b) => b.lastLogged - a.lastLogged),
+    [social.friends, myEntries],
   )
+
+  // Feed: per vriend per titel het laatste kijkmoment, gegroepeerd op logmoment
+  const feed = useMemo(() => {
+    const items = social.friends
+      .flatMap((f) => f.journal.entries.map((entry) => ({ friend: f, entry })))
+      .sort((a, b) => b.entry.createdAt - a.entry.createdAt)
+      .slice(0, 50)
+    const groups = new Map<string, typeof items>()
+    for (const item of items) {
+      const label = bucket(item.entry.createdAt)
+      groups.set(label, [...(groups.get(label) ?? []), item])
+    }
+    return [...groups]
+  }, [social.friends])
 
   return (
     <section className="friends-view">
       <div className="me-card">
-        <Avatar profile={me} size={56} />
+        <Avatar profile={me} size={52} />
         <div>
           <strong>{me.display_name}</strong>
-          <span className="muted small">@{me.username}</span>
+          <span className="muted small">{journalSummary(myEntries)}</span>
         </div>
         <button className="btn-ghost" onClick={share}>🔗 Nodig uit</button>
       </div>
 
       <div className="friend-section">
-        <h4 className="section-label">Vrienden {social.friends.length > 0 && <span className="muted small">· {social.friends.length}</span>}</h4>
+        <h4 className="section-label">Je groep {social.friends.length > 0 && <span className="muted small">· {social.friends.length}</span>}</h4>
         {social.loading ? (
           <p className="muted small">Laden…</p>
-        ) : social.friends.length === 0 ? (
-          <p className="empty">Nog niemand anders in de app. Deel de link via 🔗 Nodig uit.</p>
-        ) : (
-          <div className="friend-grid">
-            {social.friends.map((f, i) => {
-              const match = tasteMatch(myEntries, f.journal.entries)
-              const recent = [...f.journal.entries].sort((a, b) => compareDatesDesc(a.date, b.date))[0]
-              return (
-                <button key={f.id} className="friend-card rise" style={{ '--i': i } as CSSProperties} onClick={() => onOpenFriend(f)}>
-                  <Avatar profile={f} size={48} />
-                  <strong>{f.display_name}</strong>
-                  <span className="muted small">@{f.username}</span>
-                  <span className="friend-match">
-                    {match.score != null ? `${match.score}% match` : `${match.shared} samen gezien`}
-                  </span>
-                  {recent && <span className="muted small friend-recent">Laatst: {recent.title}</span>}
-                </button>
-              )
-            })}
+        ) : friends.length === 0 ? (
+          <div className="list-empty">
+            <span className="list-empty-icon">👋</span>
+            <h3>Nog niemand anders</h3>
+            <p className="muted">Deel de app via 🔗 Nodig uit. Iedereen met een account verschijnt hier vanzelf.</p>
           </div>
+        ) : (
+          <ul className="friend-list">
+            {friends.map(({ friend, match }, i) => (
+              <li key={friend.id} className="rise" style={{ '--i': i } as CSSProperties}>
+                <button className="friend-row" onClick={() => onOpenFriend(friend)}>
+                  <Avatar profile={friend} size={46} />
+                  <span className="friend-row-text">
+                    <strong>{friend.display_name}</strong>
+                    <span className="muted small">{journalSummary(friend.journal.entries)}</span>
+                  </span>
+                  <span className="friend-match" title="Smaakmatch op basis van titels die jullie allebei een rating gaven">
+                    {match.score != null ? `${match.score}%` : `${match.shared} samen`}
+                  </span>
+                  <span className="friend-chevron" aria-hidden>›</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
         {social.error && <p className="error small">{social.error}</p>}
       </div>
@@ -125,31 +159,30 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, notify, known
       {feed.length > 0 && (
         <div className="friend-section">
           <h4 className="section-label">Recent bij vrienden</h4>
-          <ul className="feed">
-            {feed.map(({ friend, entry }, i) => (
-              <li key={`${friend.id}-${entry.id}`} className="rise feed-row" style={{ '--i': Math.min(i, 15) } as CSSProperties}>
-                <button className="feed-item" onClick={() => onOpenFriend(friend)}>
-                  <Avatar profile={friend} size={34} />
-                  <div className="feed-text">
-                    <span><strong>{friend.display_name}</strong> keek <strong>{entry.title}</strong>
-                      {entry.season != null && entry.episode != null && <span className="muted"> S{entry.season}E{entry.episode}</span>}
-                    </span>
-                    <span className="meta-line">
-                      <span className="muted small">{entry.date ? relative(entry.date) : 'ooit gezien'}</span>
-                      {entry.rating != null && <StarRating value={entry.rating} />}
-                    </span>
-                    {entry.note && <p className="entry-note">“{entry.note}”</p>}
-                  </div>
-                  <Poster path={entry.posterPath} title={entry.title} size="w92" />
-                </button>
-                {!knownKeys.has(titleKey(entry)) && (
-                  <button className="feed-watch" onClick={() => onAddToWatchlist(entry)} aria-label={`${entry.title} op je watchlist`} title="Op mijn watchlist">
-                    🔖
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+          {feed.map(([label, items]) => (
+            <div key={label} className="feed-group">
+              <span className="feed-day">{label}</span>
+              <ul className="feed">
+                {items.map(({ friend, entry }, i) => (
+                  <li key={`${friend.id}-${entry.id}`} className="rise" style={{ '--i': Math.min(i, 15) } as CSSProperties}>
+                    <button className="feed-item" onClick={() => onOpenTitle(entry, friend)}>
+                      <Poster path={entry.posterPath} title={entry.title} size="w92" />
+                      <span className="feed-text">
+                        <span className="feed-who"><Avatar profile={friend} size={20} /> {friend.display_name.split(' ')[0]}</span>
+                        <strong>{entry.title}{entry.season != null && entry.episode != null && <span className="muted"> · S{entry.season}E{entry.episode}</span>}</strong>
+                        <span className="meta-line">
+                          {entry.rating != null && <StarRating value={entry.rating} />}
+                          <span className="muted small">{watchedLabel(entry.date)}</span>
+                        </span>
+                        {entry.note && <span className="entry-note">“{entry.note}”</span>}
+                      </span>
+                      <span className="friend-chevron" aria-hidden>›</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       )}
     </section>

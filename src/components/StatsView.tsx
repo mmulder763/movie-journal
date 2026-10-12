@@ -8,6 +8,10 @@ import { profileUrl } from '../lib/tmdb'
 import { fromISODate } from '../lib/dates'
 import { BarList, ColumnChart, Legend } from './Charts'
 import { ShareDialog } from './ShareDialog'
+import { GroupStats } from './GroupStats'
+import type { Profile } from '../lib/supabase'
+import type { Friend } from '../lib/social'
+import type { WatchItem } from '../types'
 
 // Gevalideerd tegen de donkere achtergrond (dataviz-validator: alle checks PASS)
 const FILM = '#1aa58f'
@@ -18,9 +22,13 @@ const WEEKDAYS = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo']
 
 interface Props {
   entries: Entry[]
+  /** Voor de groepsstatistieken (alleen met accounts) */
+  me?: Profile | null
+  friends?: Friend[]
+  onOpenTitle?: (item: WatchItem) => void
 }
 
-export function StatsView({ entries }: Props) {
+export function StatsView({ entries, me, friends = [], onOpenTitle }: Props) {
   const years = useMemo(
     () => [...new Set(entries.flatMap((e) => (e.date ? [e.date.slice(0, 4)] : [])))].sort().reverse(),
     [entries],
@@ -152,6 +160,10 @@ export function StatsView({ entries }: Props) {
               <header><h3>Regie &amp; makers</h3></header>
               {creators.length ? <BarList rows={creators} caption="Titels per regisseur of maker" color={SERIE} /> : <Loading loaded={metaLoaded} total={titles.length} />}
             </article>
+
+            {me && friends.length > 0 && onOpenTitle && (
+              <GroupStats me={me} myEntries={entries} friends={friends} period={activePeriod} onOpenTitle={onOpenTitle} />
+            )}
 
             <article className="stats-card wide">
               <header><h3>Acteurs die je het vaakst zag</h3></header>

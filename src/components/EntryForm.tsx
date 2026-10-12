@@ -7,8 +7,6 @@ import { EpisodePicker, type EpisodeSelection } from './EpisodePicker'
 
 interface Props {
   entry: Entry
-  /** Datum om terug naar te zetten als "datum onbekend" wordt uitgevinkt */
-  fallbackDate?: string
   isNew: boolean
   /** Eerdere kijkmomenten van dezelfde titel (voor de afleveringskiezer) */
   history?: Entry[]
@@ -25,7 +23,7 @@ function initialSeason(entry: Entry, history: Entry[]) {
   return seasons.length ? Math.max(...seasons) : 1
 }
 
-export function EntryForm({ entry, fallbackDate, isNew, history = [], onSave, onDelete, onBack }: Props) {
+export function EntryForm({ entry, isNew, history = [], onSave, onDelete, onBack }: Props) {
   const [draft, setDraft] = useState(entry)
   // Staat het al in de agenda, dan liggen datum/bios/aflevering vast; alleen rating en notitie zijn aan te passen
   const locked = !isNew && entry.date !== null
@@ -86,16 +84,10 @@ export function EntryForm({ entry, fallbackDate, isNew, history = [], onSave, on
         <>
           <div className="field">
             <span>Gezien op</span>
-            <div className="date-row">
-              {draft.date !== null && (
-                <input type="date" required value={draft.date} onChange={(e) => update({ date: e.target.value })} />
-              )}
-              <label className="check">
-                <input type="checkbox" checked={draft.date === null}
-                  onChange={(e) => update({ date: e.target.checked ? null : (fallbackDate ?? today()) })} />
-                Datum onbekend
-              </label>
-            </div>
+            {/* Leeg = datum onbekend (bv. bij een swipe zonder bioscoopdatum); nieuwe items krijgen altijd een datum */}
+            <input type="date" required={isNew} value={draft.date ?? ''} max={today()}
+              onChange={(e) => update({ date: e.target.value || null })} />
+            {draft.date === null && <span className="muted small">Nog geen datum: vul hem in als je weet wanneer je het zag.</span>}
           </div>
 
           {isSeries && (

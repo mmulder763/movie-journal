@@ -40,7 +40,6 @@ export function EntryDialog({ initial, isNew, date, history = [], onSave, onDele
       {draft ? (
         <EntryForm
           entry={draft}
-          fallbackDate={date}
           history={history.filter((h) => h.tmdbId === draft.tmdbId && h.mediaType === draft.mediaType)}
           isNew={isNew}
           onSave={onSave}

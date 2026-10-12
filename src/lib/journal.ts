@@ -15,6 +15,8 @@ export function applyOp(journal: Journal, op: Op): Journal {
         : [...journal.entries, op.entry]
       return { ...journal, entries }
     }
+    case 'patch':
+      return { ...journal, entries: journal.entries.map((e) => (e.id === op.id ? { ...e, ...op.patch } : e)) }
     case 'delete':
       return { ...journal, entries: journal.entries.filter((e) => e.id !== op.id) }
     case 'skip': {

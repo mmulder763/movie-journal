@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import type { MediaType } from '../types'
 import { fetchTitleDetails, logoUrl, profileUrl, type TitleDetails } from '../lib/tmdb'
 import { formatLongDate } from '../lib/dates'
+import { providerLink } from '../lib/providerLinks'
 
 // Binnen een sessie niet opnieuw ophalen bij heen-en-weer klikken
 const cache = new Map<string, Promise<TitleDetails>>()
@@ -120,20 +121,25 @@ export function TitleInfo({ mediaType, tmdbId, title }: Props) {
       {(details.streaming.length > 0 || details.rentBuy.length > 0) && (
         <>
           <h4 className="section-label">Kijken in Nederland</h4>
+          {details.streaming.length > 0 && <span className="providers-label">Bij een abonnement</span>}
           <div className="providers">
             {details.streaming.map((p) => (
-              <span key={p.name} className="provider" title={`${p.name} (abonnement)`}>
-                <img src={logoUrl(p.logoPath)} alt="" />{p.name}
-              </span>
-            ))}
-            {details.rentBuy.slice(0, 4).map((p) => (
-              <span key={p.name} className="provider rent" title={`${p.name} (huren/kopen)`}>
-                <img src={logoUrl(p.logoPath)} alt="" />{p.name}
-              </span>
+              <a key={p.name} className="provider" href={providerLink(p.name, title)} target="_blank" rel="noreferrer" title={`Open ${p.name}`}>
+                <img src={logoUrl(p.logoPath)} alt="" />{p.name}<span className="provider-go">↗</span>
+              </a>
             ))}
           </div>
-          {details.watchLink && (
-            <a className="muted small" href={details.watchLink} target="_blank" rel="noreferrer">Bron: JustWatch via TMDB ↗</a>
+          {details.rentBuy.length > 0 && (
+            <>
+              <span className="providers-label">Huren of kopen</span>
+              <div className="providers">
+                {details.rentBuy.slice(0, 6).map((p) => (
+                  <a key={p.name} className="provider rent" href={providerLink(p.name, title)} target="_blank" rel="noreferrer" title={`Open ${p.name}`}>
+                    <img src={logoUrl(p.logoPath)} alt="" />{p.name}<span className="provider-go">↗</span>
+                  </a>
+                ))}
+              </div>
+            </>
           )}
         </>
       )}

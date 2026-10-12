@@ -13,9 +13,10 @@ import { TitleSheet } from './components/TitleSheet'
 import { NowShowing, type MarqueeSlide } from './components/NowShowing'
 import { SwipeDeck, type SwipeAction } from './components/SwipeDeck'
 import { Intro } from './components/Intro'
+import { QuickRate } from './components/QuickRate'
 import { WatchlistView } from './components/WatchlistView'
 import { NotSeenView } from './components/NotSeenView'
-import { WatchItemSheet } from './components/WatchItemSheet'
+import { TitlePreviewSheet, WatchItemSheet } from './components/WatchItemSheet'
 import { AgendaIcon, FriendsIcon, ListIcon, StatsIcon, SwipeIcon } from './components/Icons'
 import { Avatar, FriendsView } from './components/FriendsView'
 import { FriendProfile } from './components/FriendProfile'
@@ -60,6 +61,10 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   const TABS = me ? [...BASE_TABS, FRIENDS_TAB] : BASE_TABS
   const social = useSocial(me)
   const [openFriend, setOpenFriend] = useState<Friend | null>(null)
+  /** Na een "gezien"-swipe: snel beoordelen */
+  const [quickRate, setQuickRate] = useState<{ id: string; title: string; posterPath: string | null } | null>(null)
+  /** Detailscherm van een titel die je zelf niet zag (bv. vanuit de groepsstatistieken) */
+  const [previewItem, setPreviewItem] = useState<WatchItem | null>(null)
   /** Detailscherm van een titel van een vriend (vanuit de banner) */
   const [friendTitle, setFriendTitle] = useState<{ item: WatchItem; friend: Friend } | null>(null)
   const [account, setAccount] = useState(false)
@@ -185,6 +190,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
       const key = titleKey(card)
       swipedEntries.current.set(key, entry.id)
       dispatch({ type: 'upsert', entry })
+      setQuickRate({ id: entry.id, title: card.title, posterPath: card.posterPath })
       // Via zoeken kan een eerder weggeswipete titel alsnog "gezien" worden
       if (skippedKeys.has(key)) dispatch({ type: 'unskip', key })
       leaveWatchlist(key)
@@ -195,7 +201,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
       fetchCinemaDate(card.tmdbId)
         .then((date) => {
           if (swipedEntries.current.get(key) !== entry.id || !date) return
-          dispatch({ type: 'upsert', entry: { ...entry, date } })
+          dispatch({ type: 'patch', id: entry.id, patch: { date } })
           notify(`📅 ${card.title} geplot op ${formatLongDate(date)}`)
         })
         .catch((err) => notify(`Bioscoopdatum ophalen mislukt: ${(err as Error).message}`))
@@ -315,10 +321,25 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
             )}
           </>
         )}
-        {tab === 'stats' && <StatsView entries={entries} />}
+        {tab === 'stats' && (
+          <StatsView entries={entries} me={me} friends={social.friends}
+            onOpenTitle={(item) => (journalKeys.has(titleKey(item)) ? setOpenTitle(titleKey(item)) : setPreviewItem(item))} />
+        )}
         {tab === 'friends' && me && (
           <FriendsView me={me} myEntries={entries} social={social} onOpenFriend={setOpenFriend} notify={notify}
-            knownKeys={knownForWatchlist} onAddToWatchlist={addToWatchlist} />
+            onOpenTitle={(entry, friend) => setFriendTitle({ item: { ...entry, addedAt: 0 }, friend })} />
+        )}
+        {tab === 'swipe' && quickRate && (
+          <QuickRate
+            key={quickRate.id}
+            title={quickRate.title}
+            posterPath={quickRate.posterPath}
+            onSkip={() => setQuickRate(null)}
+            onSave={(rating, note) => {
+              dispatch({ type: 'patch', id: quickRate.id, patch: { rating, note } })
+              setQuickRate(null)
+            }}
+          />
         )}
         {tab === 'swipe' && <SwipeDeck journalKeys={journalKeys} skippedKeys={skippedKeys} watchlistKeys={watchlistKeys} onSwipe={handleSwipe} onTopChange={setSwipeTop} />}
       </main>
@@ -380,6 +401,19 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
             setOpenFriend(friendTitle.friend)
             setFriendTitle(null)
           }} />
+      )}
+
+      {previewItem && (
+        <TitlePreviewSheet item={previewItem} onClose={() => setPreviewItem(null)}
+          status={watchlistKeys.has(titleKey(previewItem)) ? '🔖 Op je watchlist' : undefined}>
+          {!watchlistKeys.has(titleKey(previewItem)) && (
+            <button className="btn-primary" onClick={() => addToWatchlist(previewItem)}>🔖 Mijn watchlist</button>
+          )}
+          <button className="btn-ghost" onClick={() => {
+            setDialog({ initial: entryFromResult(previewItem, today()), isNew: true })
+            setPreviewItem(null)
+          }}>✓ Gezien</button>
+        </TitlePreviewSheet>
       )}
 
       {account && me && onSignOut && (
