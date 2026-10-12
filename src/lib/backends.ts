@@ -141,8 +141,17 @@ export function githubBackend({ owner, repo, token }: GitHubConfig): Backend {
       if (res.status === 401) throw new Error('Token ongeldig of verlopen. Maak een nieuw token aan.')
       // Bij een privé repo zonder toegang geeft GitHub 404 i.p.v. 403
       if (res.status === 404) {
+        // Laten zien bij welk account het token hoort: een token van een ander account is de meest voorkomende oorzaak
+        const who = await fetch('https://api.github.com/user', { headers: { Authorization: `Bearer ${token}` } })
+          .then((r) => (r.ok ? (r.json() as Promise<{ login: string }>) : null))
+          .catch(() => null)
+        if (who && who.login.toLowerCase() !== owner.toLowerCase()) {
+          throw new Error(
+            `Dit token hoort bij het account "${who.login}", maar de repo is van "${owner}". Maak het token aan terwijl je als ${owner} bent ingelogd op github.com.`,
+          )
+        }
         throw new Error(
-          `Dit token heeft geen toegang tot ${owner}/${repo}. Kies bij "Repository access" → "Only select repositories" deze repo (niet "Public repositories").`,
+          `Dit token${who ? ` (account ${who.login})` : ''} heeft geen toegang tot ${owner}/${repo}. Controleer bij het token: "Repository access" → "Only select repositories" → ${repo}, en "Contents: Read and write".`,
         )
       }
       if (!res.ok) throw new Error(`GitHub ${res.status}: ${res.statusText}`)
