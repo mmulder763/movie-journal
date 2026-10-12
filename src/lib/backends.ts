@@ -150,8 +150,13 @@ export function githubBackend({ owner, repo, token }: GitHubConfig): Backend {
             `Dit token hoort bij het account "${who.login}", maar de repo is van "${owner}". Maak het token aan terwijl je als ${owner} bent ingelogd op github.com.`,
           )
         }
+        // Welke repo's kan het token wél zien? Dat verraadt een verkeerde resource owner of repo-selectie
+        const visible = await fetch('https://api.github.com/user/repos?per_page=10&sort=updated', { headers: { Authorization: `Bearer ${token}` } })
+          .then((r) => (r.ok ? (r.json() as Promise<{ full_name: string }[]>) : []))
+          .catch(() => [])
+        const seen = visible.length ? ` Het token ziet nu wel: ${visible.map((r) => r.full_name).join(', ')}.` : ' Het token ziet op dit moment geen enkele repo.'
         throw new Error(
-          `Dit token${who ? ` (account ${who.login})` : ''} heeft geen toegang tot ${owner}/${repo}. Controleer bij het token: "Repository access" → "Only select repositories" → ${repo}, en "Contents: Read and write".`,
+          `Dit token${who ? ` (account ${who.login})` : ''} heeft geen toegang tot ${owner}/${repo}.${seen} Controleer bij het token: "Resource owner" = ${owner}, "Repository access" → "Only select repositories" → ${repo}, en "Contents: Read and write".`,
         )
       }
       if (!res.ok) throw new Error(`GitHub ${res.status}: ${res.statusText}`)
