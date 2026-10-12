@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { SearchResult } from '../types'
-import { DECK_SOURCES, fetchDeckPage, hasApiKey, searchTitles, type DeckSource } from '../lib/tmdb'
+import { DECK_SOURCES, fetchRandomDeck, hasApiKey, searchTitles, type DeckSource } from '../lib/tmdb'
 import { titleKey } from '../lib/titles'
 import { CardFace, SwipeCard, type SwipeCardHandle, type SwipeVerdict } from './SwipeCard'
 
@@ -25,9 +25,12 @@ interface Props {
 const MIN_BUFFER = 5
 
 export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, onUndo, onTopChange }: Props) {
-  const [source, setSource] = useState<DeckSource>('trending')
+  const [source, setSource] = useState<DeckSource>('random')
   const [cards, setCards] = useState<SearchResult[]>([])
-  const [page, setPage] = useState({ next: 1, hasMore: true })
+  /** Hoe vaak achter elkaar er niets nieuws bijkwam; daarna stoppen (lijst op of alles al bekend) */
+  const [page, setPage] = useState({ emptyStreak: 0, hasMore: true })
+  /** Al opgehaalde willekeurige pagina's, per lijst (zie fetchRandomDeck) */
+  const usedPages = useRef(new Set<string>())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [history, setHistory] = useState<SwipeAction[]>([])
@@ -48,7 +51,7 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
   const resetDeck = () => {
     generation.current++
     setCards([])
-    setPage({ next: 1, hasMore: true })
+    setPage({ emptyStreak: 0, hasMore: true })
     setError(null)
   }
 
@@ -81,7 +84,7 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
     setLoading(true)
     const request = searching
       ? searchTitles(activeQuery).then((results) => ({ results, hasMore: false }))
-      : fetchDeckPage(source, page.next)
+      : fetchRandomDeck(source, usedPages.current).then((results) => ({ results, hasMore: true }))
     request
       .then(({ results, hasMore }) => {
         if (gen !== generation.current) return // inmiddels andere lijst gekozen
@@ -89,7 +92,10 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
           const seen = new Set(prev.map(titleKey))
           return [...prev, ...results.filter((r) => !seen.has(titleKey(r)) && !isHidden(r))]
         })
-        setPage({ next: page.next + 1, hasMore })
+        // Zoeken levert één pagina; bij willekeurig stoppen we na een paar lege rondes
+        const fresh = results.filter((r) => !isHidden(r)).length
+        const emptyStreak = fresh === 0 ? page.emptyStreak + 1 : 0
+        setPage({ emptyStreak, hasMore: hasMore && emptyStreak < 6 && results.length > 0 })
         setSearchHits(searching ? { total: results.length, inJournal: results.filter((r) => journalKeys.has(titleKey(r))).length } : null)
       })
       .catch((err) => gen === generation.current && setError((err as Error).message))
@@ -170,7 +176,7 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
             ) : (
               <p className="muted">
                 {!searching
-                  ? 'Alles uit deze lijst gehad! Kies een andere lijst hierboven.'
+                  ? 'Niets nieuws meer gevonden. Kies een andere lijst hierboven.'
                   : searchHits && searchHits.inJournal > 0
                     ? `Geen nieuwe titels: ${searchHits.inJournal} ${searchHits.inJournal === 1 ? 'resultaat staat' : 'resultaten staan'} al in je lijst.`
                     : `Niets gevonden voor "${activeQuery}".`}

@@ -60,32 +60,79 @@ export async function searchTitles(query: string, signal?: AbortSignal): Promise
   return data.results.filter(isTitle).map((r) => toResult(r, r.media_type))
 }
 
-export type DeckSource = 'trending' | 'movie-popular' | 'movie-top' | 'tv-popular' | 'tv-top'
+export type DeckSource = 'random' | 'movie' | 'tv' | 'popular' | 'top'
 
 export const DECK_SOURCES: [DeckSource, string][] = [
-  ['trending', 'Trending'],
-  ['movie-top', 'Top films'],
-  ['movie-popular', 'Populaire films'],
-  ['tv-top', 'Top series'],
-  ['tv-popular', 'Populaire series'],
+  ['random', '🎲 Alles'],
+  ['movie', 'Films'],
+  ['tv', 'Series'],
+  ['popular', 'Populair'],
+  ['top', 'Best beoordeeld'],
 ]
 
-const SOURCE_PATHS: Record<DeckSource, [string, MediaType | null]> = {
-  trending: ['/trending/all/week', null],
-  'movie-popular': ['/movie/popular', 'movie'],
-  'movie-top': ['/movie/top_rated', 'movie'],
-  'tv-popular': ['/tv/popular', 'tv'],
-  'tv-top': ['/tv/top_rated', 'tv'],
+/** Willekeurige volgorde (Fisher–Yates) */
+function shuffle<T>(items: T[]): T[] {
+  const a = [...items]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
 }
 
-/** Eén pagina (20 titels) uit een TMDB-lijst, voor de swipe-stapel. */
-export async function fetchDeckPage(source: DeckSource, page: number): Promise<{ results: SearchResult[]; hasMore: boolean }> {
-  const [path, type] = SOURCE_PATHS[source]
-  const data = await request<{ results: ApiResult[]; page: number; total_pages: number }>(path, { page: String(page) })
-  const results = type
-    ? data.results.map((r) => toResult(r, type))
-    : data.results.filter(isTitle).map((r) => toResult(r, r.media_type))
-  return { results, hasMore: data.page < Math.min(data.total_pages, 500) }
+const pick = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)]
+
+// Discover: alleen titels met genoeg stemmen, zodat de stapel vooral herkenbare films/series bevat
+const DISCOVER: Record<MediaType, Record<string, string>> = {
+  movie: { 'vote_count.gte': '400', include_adult: 'false', sort_by: 'popularity.desc' },
+  tv: { 'vote_count.gte': '200', include_adult: 'false', sort_by: 'popularity.desc' },
+}
+
+/** Aantal pagina's per lijst (eenmalig opgehaald), zodat we een willekeurige pagina kunnen kiezen */
+const totalPages = new Map<string, Promise<number>>()
+
+function pagesFor(path: string, params: Record<string, string>, cap: number) {
+  const key = path + JSON.stringify(params)
+  let p = totalPages.get(key)
+  if (!p) {
+    p = request<{ total_pages: number }>(path, params).then((d) => Math.max(1, Math.min(d.total_pages, cap)))
+    p.catch(() => totalPages.delete(key))
+    totalPages.set(key, p)
+  }
+  return p
+}
+
+/**
+ * Eén willekeurige pagina (±20 titels) voor de swipe-stapel, door elkaar geschud.
+ * `used` houdt per lijst bij welke pagina's al geweest zijn, zodat er geen herhalingen komen;
+ * levert een lege array als een lijst op is.
+ */
+export async function fetchRandomDeck(source: DeckSource, used: Set<string>): Promise<SearchResult[]> {
+  // "Alles": per ronde een filmpagina én een seriepagina, samen geschud
+  if (source === 'random') {
+    const [movies, series] = await Promise.all([randomPage('discover', 'movie', used), randomPage('discover', 'tv', used)])
+    return shuffle([...movies, ...series])
+  }
+  if (source === 'movie' || source === 'tv') return shuffle(await randomPage('discover', source, used))
+  return shuffle(await randomPage(source, pick<MediaType>(['movie', 'tv']), used))
+}
+
+async function randomPage(list: 'discover' | 'popular' | 'top', type: MediaType, used: Set<string>): Promise<SearchResult[]> {
+  const [path, params, cap] =
+    list === 'popular'
+      ? [`/${type}/popular`, {}, 100]
+      : list === 'top'
+        ? [`/${type}/top_rated`, {}, 100]
+        : [`/discover/${type}`, DISCOVER[type], 500]
+
+  const total = await pagesFor(path, params, cap)
+  const free = Array.from({ length: total }, (_, i) => i + 1).filter((n) => !used.has(`${path}:${n}`))
+  if (free.length === 0) return []
+  const page = pick(free)
+  used.add(`${path}:${page}`)
+
+  const data = await request<{ results: ApiResult[] }>(path, { ...params, page: String(page) })
+  return data.results.filter((r) => r.poster_path).map((r) => toResult(r, type))
 }
 
 interface ReleaseDates {
