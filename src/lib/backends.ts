@@ -10,6 +10,8 @@ export interface Backend {
   apply(ops: Op[]): Promise<Journal>
   /** Alleen GitHub: API-keys uit config.json */
   loadKeys?(): Promise<ApiKeys>
+  /** Alleen GitHub: controleert of het token de repo kan zien (gooit met uitleg als dat niet zo is) */
+  checkAccess?(): Promise<void>
 }
 
 // ---------- Lokaal (dev-server, data/journal.json) ----------
@@ -130,6 +132,20 @@ export function githubBackend({ owner, repo, token }: GitHubConfig): Backend {
           if (!conflict || attempt >= 3) throw err
         }
       }
+    },
+    async checkAccess() {
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+      })
+      if (res.status === 401) throw new Error('Token ongeldig of verlopen. Maak een nieuw token aan.')
+      // Bij een privé repo zonder toegang geeft GitHub 404 i.p.v. 403
+      if (res.status === 404) {
+        throw new Error(
+          `Dit token heeft geen toegang tot ${owner}/${repo}. Kies bij "Repository access" → "Only select repositories" deze repo (niet "Public repositories").`,
+        )
+      }
+      if (!res.ok) throw new Error(`GitHub ${res.status}: ${res.statusText}`)
     },
     async loadKeys() {
       const file = await readFile(CONFIG_PATH)

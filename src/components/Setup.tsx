@@ -26,9 +26,10 @@ export function Setup({ current, allowLocal, onDone }: Props) {
     try {
       // Test: journal lezen en keys ophalen voordat we iets opslaan
       const backend = githubBackend(config)
+      await backend.checkAccess!()
       await backend.load()
       const keys = await backend.loadKeys!()
-      if (!keys.tmdb) throw new Error('config.json in de repo mist "tmdbApiKey".')
+      if (!keys.tmdb) throw new Error('config.json in de data-repo ontbreekt of mist "tmdbApiKey".')
       saveGitHubConfig(config)
       onDone()
     } catch (err) {
@@ -65,7 +66,8 @@ export function Setup({ current, allowLocal, onDone }: Props) {
           <summary>Hoe maak ik een token?</summary>
           <ol>
             <li>Open <a href={TOKEN_URL} target="_blank" rel="noreferrer">Fine-grained personal access token</a>.</li>
-            <li>Kies bij <em>Repository access</em> → <em>Only select repositories</em> → <code>{repo || DEFAULT_REPO}</code>.</li>
+            <li>Laat <em>Resource owner</em> op je eigen account staan.</li>
+            <li>Kies bij <em>Repository access</em> → <em>Only select repositories</em> → <code>{repo || DEFAULT_REPO}</code>. (De standaard "Public repositories" werkt níet: de data-repo is privé.)</li>
             <li>Bij <em>Permissions → Contents</em>: <strong>Read and write</strong>. Verder niets nodig.</li>
             <li>Kopieer het token hierboven. Het wordt alleen op dit apparaat bewaard.</li>
           </ol>
