@@ -36,24 +36,40 @@ const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
 /**
  * Minuten die bij een titel horen:
  * - film: speelduur × aantal keer gekeken
- * - serie met een entry zonder seizoen/aflevering ("hele serie", bv. via swipen): alle afleveringen, één keer
- * - anders per entry: één aflevering, of een heel seizoen als alleen het seizoen is ingevuld
+ * - serie: elke gelogde aflevering los; een entry voor een heel seizoen of de hele serie (bv. via swipen)
+ *   telt de afleveringen daarvan die niet al los gelogd zijn
  */
 export function titleMinutes(watches: Entry[], runtime: Runtime): number {
   if (runtime.kind === 'movie') return runtime.minutes * watches.length
 
-  const allSeasons = Object.values(runtime.seasons)
-  const all = allSeasons.flat()
+  const all = Object.values(runtime.seasons).flat()
   const average = all.length ? sum(all) / all.length : 0
-  if (watches.some((w) => w.season == null && w.episode == null)) return sum(all)
+  const episodeMinutes = (season: number, episode: number) => runtime.seasons[season]?.[episode - 1] ?? average
 
-  return sum(
-    watches.map((w) => {
-      const season = runtime.seasons[w.season ?? 1] ?? []
-      if (w.episode == null) return sum(season)
-      return season[w.episode - 1] ?? average
-    }),
-  )
+  // Elke gelogde aflevering telt los mee (ook herkijken)
+  let minutes = 0
+  const logged = new Set<string>()
+  for (const w of watches) {
+    if (w.episode == null) continue
+    const season = w.season ?? 1
+    minutes += episodeMinutes(season, w.episode)
+    logged.add(`${season}-${w.episode}`)
+  }
+
+  // "Heel seizoen" of "hele serie" zonder losse afleveringen: de afleveringen die nog niet los gelogd zijn
+  const notLogged = (season: number) =>
+    sum((runtime.seasons[season] ?? []).filter((_, i) => !logged.has(`${season}-${i + 1}`)))
+  const seasonsDone = new Set<number>()
+  for (const w of watches) {
+    if (w.episode != null) continue
+    const seasons = w.season != null ? [w.season] : Object.keys(runtime.seasons).map(Number)
+    for (const s of seasons) {
+      if (seasonsDone.has(s)) continue
+      seasonsDone.add(s)
+      minutes += notLogged(s)
+    }
+  }
+  return minutes
 }
 
 export interface WatchTime {

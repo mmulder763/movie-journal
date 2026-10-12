@@ -37,7 +37,7 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, f
             </span>
             {title.avgRating != null && (
               <span className="rating-line">
-                <StarRating value={Math.round(title.avgRating)} />
+                <StarRating value={title.avgRating} />
                 <span className="muted small">{title.avgRating.toFixed(1)}</span>
               </span>
             )}
@@ -61,7 +61,7 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, f
             <ul className="friend-watches">
               {friendWatches.map(({ friend, watches }) => {
                 const rated = watches.filter((w) => w.rating)
-                const avg = rated.length ? Math.round(rated.reduce((n, w) => n + w.rating!, 0) / rated.length) : undefined
+                const avg = rated.length ? rated.reduce((n, w) => n + w.rating!, 0) / rated.length : undefined
                 const note = watches.find((w) => w.note)?.note
                 return (
                   <li key={friend.id}>

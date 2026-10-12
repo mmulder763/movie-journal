@@ -8,12 +8,14 @@ interface Props {
   children: ReactNode
   /** Optionele TMDB backdrop als header-achtergrond */
   backdrop?: string | null
+  /** Volledige hoogte van het zichtbare scherm (bv. zoeken, met toetsenbord open) */
+  full?: boolean
 }
 
 // Open modals, bovenste laatst: Escape sluit alleen de bovenste (detailscherm boven een vriendprofiel)
 const stack: symbol[] = []
 
-export function Modal({ title, onClose, children, backdrop }: Props) {
+export function Modal({ title, onClose, children, backdrop, full = false }: Props) {
   // Laatste onClose bewaren, zodat de modal zich maar één keer (bij openen) op de stapel zet
   const closeRef = useRef(onClose)
   closeRef.current = onClose
@@ -36,8 +38,8 @@ export function Modal({ title, onClose, children, backdrop }: Props) {
 
   // Via een portal in <body>: een ouder met backdrop-filter of transform zou position: fixed anders insluiten
   return createPortal(
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-backdrop ${full ? 'full' : ''}`} onClick={onClose}>
+      <div className={`modal ${full ? 'modal-full' : ''}`} role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
         {bg && <div className="modal-hero" style={{ backgroundImage: `url(${bg})` }} />}
         <header className="modal-header">
           <h3>{title}</h3>

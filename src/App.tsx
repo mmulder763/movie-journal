@@ -452,6 +452,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
           isNew={dialog.isNew}
           date={selected}
           history={entries}
+          watchlist={journal.watchlist}
           onSave={handleSave}
           onDelete={handleDelete}
           onClose={() => setDialog(null)}

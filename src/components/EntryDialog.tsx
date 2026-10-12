@@ -12,6 +12,8 @@ interface Props {
   date: string
   /** Eerdere kijkmomenten van dezelfde titel */
   history?: Entry[]
+  /** Suggesties in het zoekscherm */
+  watchlist?: WatchItem[]
   onSave: (entries: Entry[]) => void
   onDelete: (id: string) => void
   onClose: () => void
@@ -31,12 +33,12 @@ export function entryFromResult(r: SearchResult | Entry | WatchItem, date: strin
   }
 }
 
-export function EntryDialog({ initial, isNew, date, history = [], onSave, onDelete, onClose }: Props) {
+export function EntryDialog({ initial, isNew, date, history = [], watchlist = [], onSave, onDelete, onClose }: Props) {
   const [draft, setDraft] = useState<Entry | null>(initial)
   const startedWithSearch = initial === null
 
   return (
-    <Modal title={isNew ? 'Toevoegen' : 'Bewerken'} onClose={onClose} backdrop={draft?.backdropPath}>
+    <Modal title={isNew ? 'Toevoegen' : 'Bewerken'} onClose={onClose} backdrop={draft?.backdropPath} full={!draft}>
       {draft ? (
         <EntryForm
           entry={draft}
@@ -47,7 +49,7 @@ export function EntryDialog({ initial, isNew, date, history = [], onSave, onDele
           onBack={startedWithSearch ? () => setDraft(null) : undefined}
         />
       ) : (
-        <SearchStep onPick={(r) => setDraft(entryFromResult(r, date))} />
+        <SearchStep watchlist={watchlist} onPick={(r) => setDraft(entryFromResult(r, date))} />
       )}
     </Modal>
   )

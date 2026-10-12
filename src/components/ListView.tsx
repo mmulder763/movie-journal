@@ -108,7 +108,7 @@ export function ListView({ titles, onOpen }: Props) {
                     <Poster path={t.posterPath} title={t.title} size="w342" />
                     {t.watches.length > 1 && <span className="wall-count">{t.watches.length}×</span>}
                     {t.avgRating != null && (
-                      <span className="wall-stars"><StarRating value={Math.round(t.avgRating)} /></span>
+                      <span className="wall-stars"><StarRating value={t.avgRating} /></span>
                     )}
                   </div>
                   <span className="wall-title">{t.title}</span>

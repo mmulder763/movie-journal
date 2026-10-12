@@ -22,7 +22,7 @@ export function FriendTitleSheet({ item, friend, mySeen, knownKeys, onAddToWatch
   const key = titleKey(item)
   const watches = friend.journal.entries.filter((e) => titleKey(e) === key)
   const rated = watches.filter((w) => w.rating)
-  const avg = rated.length ? Math.round(rated.reduce((n, w) => n + w.rating!, 0) / rated.length) : undefined
+  const avg = rated.length ? rated.reduce((n, w) => n + w.rating!, 0) / rated.length : undefined
   const note = watches.find((w) => w.note)?.note
   const first = friend.display_name.split(' ')[0]
 

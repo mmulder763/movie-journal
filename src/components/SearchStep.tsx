@@ -1,27 +1,45 @@
-import { useEffect, useState } from 'react'
-import type { SearchResult } from '../types'
-import { hasApiKey, searchTitles } from '../lib/tmdb'
+import { useEffect, useState, type CSSProperties } from 'react'
+import type { SearchResult, WatchItem } from '../types'
+import { fetchTrending, hasApiKey, searchTitles } from '../lib/tmdb'
 import { Poster } from './Poster'
+import { SearchIcon } from './ListView'
 
 interface Props {
   onPick: (result: SearchResult) => void
+  /** Suggesties als er nog niets getypt is */
+  watchlist?: WatchItem[]
 }
 
-export function SearchStep({ onPick }: Props) {
+// Populair-lijst één keer per sessie ophalen
+let trendingCache: Promise<SearchResult[]> | null = null
+
+export function SearchStep({ onPick, watchlist = [] }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
+  const [trending, setTrending] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const q = query.trim()
 
   useEffect(() => {
-    const q = query.trim()
+    if (!hasApiKey()) return
+    trendingCache ??= fetchTrending().catch(() => [])
+    let cancelled = false
+    trendingCache.then((t) => !cancelled && setTrending(t))
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     if (q.length < 2) {
       setResults([])
+      setLoading(false)
       return
     }
     const controller = new AbortController()
+    setLoading(true)
     const timer = setTimeout(async () => {
-      setLoading(true)
       setError(null)
       try {
         setResults(await searchTitles(q, controller.signal))
@@ -35,42 +53,71 @@ export function SearchStep({ onPick }: Props) {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [query])
+  }, [q])
 
-  if (!hasApiKey()) {
-    return (
-      <p className="error">
-        Geen TMDB API key gevonden. Zet <code>VITE_TMDB_API_KEY</code> in een <code>.env</code> bestand en herstart de dev-server.
-      </p>
-    )
-  }
+  if (!hasApiKey()) return <p className="error">Geen TMDB API key ingesteld.</p>
+
+  const asResult = (w: WatchItem): SearchResult => ({ ...w, backdropPath: w.backdropPath ?? null, overview: '' })
 
   return (
     <div className="search-step">
-      <input
-        type="search"
-        autoFocus
-        placeholder="Zoek een film of serie…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      {loading && <p className="muted small">Zoeken…</p>}
-      {error && <p className="error">{error}</p>}
-      {!loading && !error && query.trim().length >= 2 && results.length === 0 && (
-        <p className="muted small">Niets gevonden.</p>
-      )}
-      <ul className="search-results">
-        {results.map((r) => (
-          <li key={`${r.mediaType}-${r.tmdbId}`}>
-            <button className="search-result" onClick={() => onPick(r)}>
-              <Poster path={r.posterPath} title={r.title} size="w92" />
-              <div>
-                <strong>{r.title}</strong>
-                <span className="muted small">
-                  {r.mediaType === 'tv' ? 'Serie' : 'Film'}
-                  {r.year && ` · ${r.year}`}
-                </span>
-              </div>
+      <div className="list-search">
+        <SearchIcon />
+        <input type="search" autoFocus enterKeyHint="search" placeholder="Zoek een film of serie…" value={query}
+          onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && query && (e.stopPropagation(), setQuery(''))} />
+        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Wissen">✕</button>}
+      </div>
+
+      <div className="search-body">
+        {q.length < 2 ? (
+          <>
+            {watchlist.length > 0 && <Suggestions title="Van je watchlist" items={watchlist.map(asResult)} onPick={onPick} />}
+            {trending.length > 0 && <Suggestions title="Populair deze week" items={trending} onPick={onPick} />}
+          </>
+        ) : loading && results.length === 0 ? (
+          <ul className="search-results">
+            {Array.from({ length: 4 }, (_, i) => <li key={i} className="result-skeleton" />)}
+          </ul>
+        ) : error ? (
+          <p className="error">{error}</p>
+        ) : results.length === 0 ? (
+          <p className="empty">Niets gevonden voor “{q}”.</p>
+        ) : (
+          <ul className="search-results">
+            {results.map((r, i) => (
+              <li key={`${r.mediaType}-${r.tmdbId}`} style={{ '--i': Math.min(i, 10) } as CSSProperties}>
+                <button className="search-result" onClick={() => onPick(r)}>
+                  <Poster path={r.posterPath} title={r.title} size="w185" />
+                  <div>
+                    <strong>{r.title}</strong>
+                    <span className="meta-line">
+                      <span className={`badge badge-${r.mediaType}`}>{r.mediaType === 'tv' ? 'Serie' : 'Film'}</span>
+                      {r.year && <span className="muted small">{r.year}</span>}
+                      {r.voteAverage != null && r.voteAverage > 0 && <span className="tmdb-score">★ {r.voteAverage.toFixed(1)}</span>}
+                    </span>
+                    {r.overview && <span className="result-overview">{r.overview}</span>}
+                  </div>
+                  <span className="result-add" aria-hidden>＋</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function Suggestions({ title, items, onPick }: { title: string; items: SearchResult[]; onPick: (r: SearchResult) => void }) {
+  return (
+    <div className="search-suggestions">
+      <h4 className="section-label">{title}</h4>
+      <ul>
+        {items.slice(0, 12).map((r, i) => (
+          <li key={`${r.mediaType}-${r.tmdbId}`} style={{ '--i': i } as CSSProperties}>
+            <button onClick={() => onPick(r)} title={r.title}>
+              <Poster path={r.posterPath} title={r.title} size="w185" />
+              <span>{r.title}</span>
             </button>
           </li>
         ))}

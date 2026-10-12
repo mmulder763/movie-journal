@@ -78,8 +78,11 @@ export function StatsView({ entries: myEntries, me, friends = [], onOpenTitle }:
     return WEEKDAYS.map((label, i) => ({ label, segments: [{ name: 'Kijkmomenten', value: counts[i], color: FILM }] }))
   }, [scoped])
 
-  const ratingColumns = [1, 2, 3, 4, 5].map((n) => ({
-    label: '★'.repeat(n),
+  // Kolommen per halve ster, maar alleen halve stappen tonen als die ook gebruikt worden
+  const usesHalves = ratings.some((r) => r % 1 !== 0)
+  const ratingSteps = usesHalves ? [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] : [1, 2, 3, 4, 5]
+  const ratingColumns = ratingSteps.map((n) => ({
+    label: usesHalves ? String(n).replace('.', ',') : '★'.repeat(n),
     segments: [{ name: 'Keer', value: ratings.filter((r) => r === n).length, color: FILM }],
   }))
 

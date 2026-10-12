@@ -82,18 +82,17 @@ function shuffle<T>(items: T[]): T[] {
 
 const pick = <T,>(items: T[]) => items[Math.floor(Math.random() * items.length)]
 
-// Discover kan per zoekopdracht maar 500 pagina's diep; met een willekeurig jaar en een willekeurige
-// sortering komt de stapel overal in de catalogus uit, niet alleen bij de bekendste titels
-const SORTS = ['popularity.desc', 'popularity.asc', 'vote_average.desc', 'vote_count.desc', 'primary_release_date.desc', 'original_title.asc']
-const FIRST_YEAR = 1920
+// Willekeurig, maar wel bekende titels: alleen films/series met genoeg stemmen, met een willekeurige
+// sortering zodat je niet steeds dezelfde top-lijst krijgt
+const SORTS = ['popularity.desc', 'vote_count.desc', 'vote_average.desc', 'revenue.desc', 'primary_release_date.desc']
 
 function randomDiscover(type: MediaType): Record<string, string> {
-  const year = FIRST_YEAR + Math.floor(Math.random() * (new Date().getFullYear() - FIRST_YEAR + 1))
-  const sort = pick(SORTS).replace('primary_release_date', type === 'tv' ? 'first_air_date' : 'primary_release_date')
+  let sort = pick(SORTS)
+  if (type === 'tv') sort = sort === 'revenue.desc' ? 'popularity.desc' : sort.replace('primary_release_date', 'first_air_date')
   return {
     include_adult: 'false',
-    sort_by: type === 'tv' && sort === 'original_title.asc' ? 'name.asc' : sort,
-    [type === 'tv' ? 'first_air_date_year' : 'primary_release_year']: String(year),
+    sort_by: sort,
+    'vote_count.gte': type === 'movie' ? '1000' : '300',
   }
 }
 
@@ -379,6 +378,12 @@ export async function fetchSeasonEpisodes(tvId: number, season: number): Promise
 /** Basisgegevens van één titel (voor weggeswipete titels van vóór het opslaan van titelgegevens) */
 export async function fetchBasic(mediaType: MediaType, tmdbId: number): Promise<SearchResult> {
   return toResult(await request<ApiResult>(`/${mediaType}/${tmdbId}`), mediaType)
+}
+
+/** Wat deze week populair is (films en series), voor suggesties in het zoekscherm */
+export async function fetchTrending(): Promise<SearchResult[]> {
+  const data = await request<{ results: ApiResult[] }>('/trending/all/week')
+  return data.results.filter(isTitle).filter((r) => r.poster_path).map((r) => toResult(r, r.media_type))
 }
 
 export const profileUrl = (path: string | null) => (path ? `${IMAGE_BASE}/w185${path}` : null)

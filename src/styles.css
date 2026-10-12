@@ -533,7 +533,7 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .calendar, .day-panel, .stat, .tabs-top, .segmented, .sync-badge, .chip:not(.active), .modal {
   backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
 }
-.modal { background: rgba(12, 18, 16, 0.82); }
+.modal { background: rgba(12, 18, 16, 0.96); }
 .calendar, .day-panel, .stat { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 30px 60px -30px rgba(0, 0, 0, 0.8); }
 
 /* Hue-gradients */
@@ -556,6 +556,9 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 }
 .eyebrow { background: linear-gradient(90deg, var(--accent), var(--movie)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .stars .on { background: linear-gradient(180deg, #8ff5c8, var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 6px rgba(62, 232, 160, 0.5)); }
+/* Halve ster: linkerhelft gekleurd, rechterhelft als lege ster */
+.stars .half { background: linear-gradient(90deg, #5fe7b2 50%, rgba(255, 255, 255, 0.16) 50%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.stars-lg button.half { animation: star-pop 0.45s var(--spring) both; }
 .stat:first-child strong { color: var(--movie); }
 .stat:nth-child(2) strong { color: var(--tv); }
 .stat:last-child strong { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -1173,6 +1176,33 @@ img.avatar { object-fit: cover; padding: 0; }
 .avatar-stack { display: flex; margin-top: 2px; }
 .avatar-stack .avatar { margin-right: -6px; box-shadow: 0 0 0 2px var(--surface-solid); }
 .avatar-more { font-size: 0.7rem; color: var(--muted); margin-left: 10px; align-self: center; }
+
+/* Zoekscherm: volle hoogte boven het toetsenbord */
+.modal-backdrop.full { align-items: flex-end; }
+.modal.modal-full {
+  display: flex; flex-direction: column; height: calc(var(--vv-height, 100dvh) - env(safe-area-inset-top) - 12px);
+  max-height: none; overflow: hidden; padding-bottom: 0;
+}
+@media (min-width: 600px) { .modal.modal-full { height: min(760px, calc(var(--vv-height, 100dvh) - 48px)); } }
+.modal-full .search-step { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; }
+.search-step .list-search { flex-shrink: 0; }
+.search-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 -18px; padding: 0 18px calc(18px + env(safe-area-inset-bottom)); display: grid; align-content: start; gap: 16px; }
+.search-results { display: grid; gap: 6px; padding: 0; }
+.search-results li { animation: rise 0.35s var(--ease-out) both; animation-delay: calc(var(--i) * 30ms); }
+.search-result { align-items: center; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); }
+.search-result .poster { width: 52px; border-radius: 8px; }
+.search-result > div { flex: 1; }
+.search-result strong { line-height: 1.05; }
+.result-overview { font-size: 0.78rem; color: var(--muted); line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.result-add { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 1rem; color: var(--accent-text); background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+.result-skeleton { height: 92px; border-radius: 12px; background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.1), rgba(255,255,255,0.04)) 0 0 / 200% 100%; animation: shimmer 1.2s linear infinite; }
+.search-suggestions { display: grid; gap: 8px; }
+.search-suggestions ul { list-style: none; margin: 0 -18px; padding: 2px 18px 6px; display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; scroll-padding-inline: 18px; }
+.search-suggestions li { flex: 0 0 96px; animation: rise 0.4s var(--ease-out) both; animation-delay: calc(var(--i) * 30ms); }
+.search-suggestions button { display: grid; gap: 4px; width: 100%; text-align: left; }
+.search-suggestions .poster { width: 100%; border-radius: 10px; transition: transform 0.2s var(--spring); }
+.search-suggestions button:active .poster { transform: scale(0.95); }
+.search-suggestions span { font-size: 0.75rem; font-weight: 600; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

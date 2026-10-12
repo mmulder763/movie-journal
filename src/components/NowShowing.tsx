@@ -78,7 +78,7 @@ export function NowShowing({ titles, friends, onOpenSlide, onAdd, onSlideChange 
       backdropPath: t.backdropPath,
       year: t.year,
       date: t.lastDate,
-      rating: t.avgRating != null ? Math.round(t.avgRating) : undefined,
+      rating: t.avgRating,
       friend: null,
       loggedAt: Math.max(...t.watches.map((w) => w.createdAt)),
     }))
@@ -156,7 +156,7 @@ export function NowShowing({ titles, friends, onOpenSlide, onAdd, onSlideChange 
                 <span className="eyebrow">Jij keek dit</span>
               )}
             </span>
-            <span className="marquee-when">📅 {whenLabel(current.date)}</span>
+            {current.date && <span className="marquee-when">📅 {whenLabel(current.date)}</span>}
             <h2 className="marquee-title">{current.title}</h2>
             <div className="meta-line">
               <span className={`badge badge-${current.mediaType}`}>{current.mediaType === 'tv' ? 'Serie' : 'Film'}</span>
