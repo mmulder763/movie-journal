@@ -180,7 +180,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
       // Series hebben geen bioscooprelease; die blijven zonder datum
       if (card.mediaType !== 'movie') return
 
-      // Elke "ja" op de NL-bioscoopdatum plotten; niet meer toepassen als de swipe inmiddels ongedaan is gemaakt
+      // Elke "ja" op de NL-bioscoopdatum plotten (alleen als de entry nog bestaat)
       fetchCinemaDate(card.tmdbId)
         .then((date) => {
           if (swipedEntries.current.get(key) !== entry.id || !date) return
