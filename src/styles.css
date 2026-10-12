@@ -374,9 +374,10 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 .swipe-search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; color: var(--muted); }
 .swipe-search-clear:hover { background: var(--surface-2); color: var(--text); }
 .chips {
-  display: flex; gap: 6px; overflow-x: auto; max-width: 100%; scrollbar-width: none;
-  /* Scrollvakken knippen schaduwen af: ruimte maken voor de gloed van de actieve chip */
-  padding: 6px 6px 14px; margin: -6px -6px -14px;
+  display: flex; gap: 6px; overflow-x: auto; max-width: calc(100% + 32px); scrollbar-width: none;
+  /* Scrollvakken knippen schaduwen af: rondom ruimte voor de gloed van de actieve chip;
+     de rij loopt daardoor tot de schermrand door, de chips zelf blijven op dezelfde plek */
+  padding: 8px 16px 16px; margin: -8px -16px -16px; scroll-padding-inline: 16px;
 }
 .chip { white-space: nowrap; padding: 7px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; color: var(--muted); border: 1px solid var(--border); transition: all 0.25s var(--ease-out); }
 .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 6px 18px -6px rgba(139, 108, 255, 0.8); }
@@ -548,7 +549,7 @@ code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
 }
 @keyframes gradient-flow-slow { to { background-position: 100% 0; } }
 .btn-primary:hover { box-shadow: 0 14px 34px -10px rgba(62, 232, 160, 0.9); }
-.chip.active { background: linear-gradient(120deg, var(--accent), var(--accent-2)); color: var(--accent-text); border-color: transparent; box-shadow: 0 6px 20px -6px rgba(62, 232, 160, 0.7); }
+.chip.active { background: linear-gradient(120deg, var(--accent), var(--accent-2)); color: var(--accent-text); border-color: transparent; box-shadow: 0 4px 14px -4px rgba(62, 232, 160, 0.7); }
 .tabs-top button.active, .tabs-bottom button.active, .segmented button.active {
   background: linear-gradient(120deg, rgba(62, 232, 160, 0.95), rgba(20, 184, 166, 0.95)); color: var(--accent-text);
   box-shadow: 0 6px 20px -8px rgba(62, 232, 160, 0.8);
