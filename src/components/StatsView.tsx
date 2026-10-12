@@ -39,7 +39,8 @@ export function StatsView({ entries: myEntries, me, friends = [], onOpenTitle }:
     () => [...new Set(entries.flatMap((e) => (e.date ? [e.date.slice(0, 4)] : [])))].sort().reverse(),
     [entries],
   )
-  const [period, setPeriod] = useState<string>(() => String(new Date().getFullYear()))
+  // Standaard alles: titels zonder datum (bv. via swipen) tellen alleen daar mee
+  const [period, setPeriod] = useState<string>('all')
   const [sharing, setSharing] = useState(false)
   const activePeriod = period === 'all' || years.includes(period) ? period : 'all'
 
@@ -144,6 +145,11 @@ export function StatsView({ entries: myEntries, me, friends = [], onOpenTitle }:
       ) : (
         <>
           <WatchTimeHero time={watchTime} />
+          {activePeriod !== 'all' && entries.some((e) => !e.date) && (
+            <p className="muted small stats-note">
+              {new Set(entries.filter((e) => !e.date).map((e) => `${e.mediaType}-${e.tmdbId}`)).size} titels zonder datum (zoals geswipete series) tellen alleen mee bij <button className="link-btn" onClick={() => setPeriod('all')}>Alles</button>.
+            </p>
+          )}
           <div className="stat-tiles">
             <Tile value={scoped.length} label="Kijkmomenten" />
             <Tile value={movies} label="Films" color={FILM} />

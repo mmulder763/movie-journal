@@ -65,6 +65,11 @@ export function EpisodePicker({ tvId, history, value, onChange, multiple }: Prop
   }, [tvId, value.season])
 
   /** "seizoen-aflevering" → laatste datum (of "" als gezien zonder datum) */
+  // Hele serie (bv. via swipen) of heel seizoen gezien: alle afleveringen daarvan tellen als gezien
+  const wholeSeries = history.find((e) => e.season == null && e.episode == null)
+  const wholeSeasons = new Map(history.filter((e) => e.season != null && e.episode == null).map((e) => [e.season!, e.date ?? '']))
+  const seasonCovered = (n: number) => (wholeSeries ? wholeSeries.date ?? '' : wholeSeasons.get(n))
+
   const seen = useMemo(() => {
     const map = new Map<string, string>()
     for (const e of history) {
@@ -76,7 +81,8 @@ export function EpisodePicker({ tvId, history, value, onChange, multiple }: Prop
     return map
   }, [history])
 
-  const seenInSeason = (n: number) => [...seen.keys()].filter((k) => k.startsWith(`${n}-`)).length
+  const seenInSeason = (n: number, count: number) =>
+    seasonCovered(n) !== undefined ? count : [...seen.keys()].filter((k) => k.startsWith(`${n}-`)).length
   const todayIso = today()
   const aired = (ep: EpisodeInfo) => !ep.airDate || ep.airDate <= todayIso
 
@@ -87,7 +93,10 @@ export function EpisodePicker({ tvId, history, value, onChange, multiple }: Prop
   }
 
   const selectUnseen = () =>
-    episodes && onChange({ ...value, episodes: episodes.filter((e) => aired(e) && !seen.has(`${value.season}-${e.number}`)).map((e) => e.number) })
+    episodes && onChange({
+      ...value,
+      episodes: episodes.filter((e) => aired(e) && !seen.has(`${value.season}-${e.number}`) && seasonCovered(value.season) === undefined).map((e) => e.number),
+    })
 
   if (error) return <p className="error small">Afleveringen laden mislukt: {error}</p>
 
@@ -95,7 +104,7 @@ export function EpisodePicker({ tvId, history, value, onChange, multiple }: Prop
     <div className="episode-picker">
       <div className="chips season-chips">
         {(seasons ?? []).map((s) => {
-          const done = seenInSeason(s.number)
+          const done = seenInSeason(s.number, s.episodeCount)
           return (
             <button type="button" key={s.number} className={`chip ${value.season === s.number ? 'active' : ''}`}
               onClick={() => onChange({ season: s.number, episodes: [] })}>
@@ -117,7 +126,7 @@ export function EpisodePicker({ tvId, history, value, onChange, multiple }: Prop
         {!episodes
           ? Array.from({ length: 4 }, (_, i) => <li key={i} className="episode-skeleton" />)
           : episodes.map((ep, i) => {
-              const seenDate = seen.get(`${value.season}-${ep.number}`)
+              const seenDate = seen.get(`${value.season}-${ep.number}`) ?? seasonCovered(value.season)
               const selected = value.episodes.includes(ep.number)
               const upcoming = !aired(ep)
               return (
@@ -163,9 +172,9 @@ export function SeasonProgress({ tvId, history }: { tvId: number; history: Entry
 
   return (
     <div className="season-progress">
-      {wholeSeries && <span className="muted small">Ooit helemaal gezien (zonder afleveringen gelogd)</span>}
+      {wholeSeries && <span className="muted small">✓ Hele serie gezien</span>}
       {regular.map((s, i) => {
-        const done = fullSeasons.has(s.number) ? s.episodeCount : Math.min(seenIn(s.number), s.episodeCount)
+        const done = wholeSeries || fullSeasons.has(s.number) ? s.episodeCount : Math.min(seenIn(s.number), s.episodeCount)
         return (
           <div key={s.number} className="season-row" style={{ '--i': i } as CSSProperties}>
             <span className="season-label">S{s.number}</span>

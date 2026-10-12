@@ -36,6 +36,8 @@ interface ApiResult {
   first_air_date?: string
   overview?: string
   vote_average?: number
+  vote_count?: number
+  genre_ids?: number[]
 }
 
 function toResult(r: ApiResult, mediaType: MediaType): SearchResult {
@@ -48,6 +50,7 @@ function toResult(r: ApiResult, mediaType: MediaType): SearchResult {
     year: (r.release_date ?? r.first_air_date)?.slice(0, 4) || undefined,
     overview: r.overview ?? '',
     voteAverage: r.vote_average,
+    genreIds: r.genre_ids,
   }
 }
 
@@ -115,23 +118,71 @@ function pagesFor(path: string, params: Record<string, string>, cap: number) {
  * `used` houdt per lijst bij welke pagina's al geweest zijn, zodat er geen herhalingen komen;
  * levert een lege array als een lijst op is.
  */
-export async function fetchRandomDeck(source: DeckSource, used: Set<string>): Promise<SearchResult[]> {
-  // "Alles": per ronde een filmpagina én een seriepagina, samen geschud
-  if (source === 'random') {
-    const [movies, series] = await Promise.all([randomPage('discover', 'movie', used), randomPage('discover', 'tv', used)])
-    return shuffle([...movies, ...series])
-  }
-  if (source === 'movie' || source === 'tv') return shuffle(await randomPage('discover', source, used))
-  return shuffle(await randomPage(source, pick<MediaType>(['movie', 'tv']), used))
+/** Wat de stapel over je smaak weet */
+export interface Taste {
+  /** Titels die je zag of leuk vond (nieuwste eerst), voor aanbevelingen */
+  seeds: { tmdbId: number; mediaType: MediaType }[]
+  /** Genre-id → gewicht (positief = vaker), per type */
+  genres: Record<MediaType, Map<number, number>>
 }
 
-async function randomPage(list: 'discover' | 'popular' | 'top', type: MediaType, used: Set<string>): Promise<SearchResult[]> {
+/** Kans dat een ronde "voor jou" is in plaats van willekeurig populair */
+const PERSONAL_SHARE = 0.6
+
+/**
+ * Eén ronde voor de swipe-stapel, geschud. Mengt "voor jou" (TMDB-aanbevelingen bij titels die je zag,
+ * of je favoriete genres) met willekeurige populaire titels, zodat je ook nieuwe dingen blijft zien.
+ */
+export async function fetchRandomDeck(source: DeckSource, used: Set<string>, taste?: Taste): Promise<SearchResult[]> {
+  if (source === 'popular' || source === 'top') return shuffle(await randomPage(source, pick<MediaType>(['movie', 'tv']), used))
+  const types: MediaType[] = source === 'random' ? ['movie', 'tv'] : [source]
+  const pages = await Promise.all(types.map((type) => roundFor(type, used, taste)))
+  return shuffle(pages.flat())
+}
+
+async function roundFor(type: MediaType, used: Set<string>, taste?: Taste): Promise<SearchResult[]> {
+  if (taste && Math.random() < PERSONAL_SHARE) {
+    const seeds = taste.seeds.filter((s) => s.mediaType === type)
+    const topGenres = [...taste.genres[type]].filter(([, w]) => w > 0).sort((a, b) => b[1] - a[1]).slice(0, 4)
+    // Aanbevelingen bij een recent gezien titel, of een pagina uit een van je favoriete genres
+    if (seeds.length && (Math.random() < 0.5 || topGenres.length === 0)) {
+      const seed = pick(seeds.slice(0, 25))
+      const recs = await recommendations(seed.mediaType, seed.tmdbId, used)
+      if (recs.length) return recs
+    }
+    if (topGenres.length) {
+      const genre = weightedPick(topGenres)
+      const page = await randomPage('discover', type, used, { with_genres: String(genre) })
+      if (page.length) return page
+    }
+  }
+  return randomPage('discover', type, used)
+}
+
+function weightedPick(weights: [number, number][]): number {
+  const total = weights.reduce((n, [, w]) => n + w, 0)
+  let r = Math.random() * total
+  for (const [id, w] of weights) if ((r -= w) <= 0) return id
+  return weights[0][0]
+}
+
+async function recommendations(type: MediaType, tmdbId: number, used: Set<string>): Promise<SearchResult[]> {
+  const key = `rec:${type}:${tmdbId}`
+  if (used.has(key)) return []
+  used.add(key)
+  const data = await request<{ results: ApiResult[] }>(`/${type}/${tmdbId}/recommendations`)
+  // Ook hier: geen obscure titels
+  const min = type === 'movie' ? 300 : 100
+  return data.results.filter((r) => r.poster_path && (r.vote_count ?? 0) >= min).map((r) => toResult(r, type))
+}
+
+async function randomPage(list: 'discover' | 'popular' | 'top', type: MediaType, used: Set<string>, extra: Record<string, string> = {}): Promise<SearchResult[]> {
   const [path, params, cap] =
     list === 'popular'
       ? [`/${type}/popular`, {}, 100]
       : list === 'top'
         ? [`/${type}/top_rated`, {}, 100]
-        : [`/discover/${type}`, randomDiscover(type), 500]
+        : [`/discover/${type}`, { ...randomDiscover(type), ...extra }, 500]
 
   const total = await pagesFor(path, params, cap)
   const listKey = `${path}?${new URLSearchParams(params)}`

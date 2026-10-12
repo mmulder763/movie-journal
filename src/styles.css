@@ -1212,6 +1212,8 @@ img.avatar { object-fit: cover; padding: 0; }
 .day-people.dots { left: auto; right: 4px; top: 5px; bottom: auto; }
 .day-people.dots .avatar { margin-right: -4px; font-size: 0 !important; }
 .day:not(.has-entries) .day-people.dots { opacity: 0.9; }
+.stats-note { margin: -8px 4px 0; }
+.link-btn { color: var(--accent); text-decoration: underline; padding: 0; font: inherit; }
 .remove-title { justify-self: center; margin-top: 8px; }
 .day-friends { padding: 4px 10px 12px; display: grid; gap: 6px; }
 .day-friends .section-label { padding: 0 6px; }

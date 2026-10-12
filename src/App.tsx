@@ -105,6 +105,14 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   }, [entries])
 
   const titles = useMemo(() => summarizeTitles(entries), [entries])
+  // Basis voor aanbevelingen bij het swipen: recent gelogd, zonder titels die je slecht vond
+  const swipeSeeds = useMemo(
+    () => [...titles]
+      .filter((t) => t.avgRating == null || t.avgRating >= 3)
+      .sort((a, b) => Math.max(...b.watches.map((w) => w.createdAt)) - Math.max(...a.watches.map((w) => w.createdAt)))
+      .map((t) => ({ tmdbId: t.tmdbId, mediaType: t.mediaType })),
+    [titles],
+  )
   // Agenda: wat vrienden op welke dag keken
   const friendsByDate = useMemo(() => {
     const map = new Map<string, FriendWatch[]>()
@@ -368,7 +376,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
             }}
           />
         )}
-        {tab === 'swipe' && <SwipeDeck journalKeys={journalKeys} skippedKeys={skippedKeys} watchlistKeys={watchlistKeys} onSwipe={handleSwipe} onTopChange={setSwipeTop} />}
+        {tab === 'swipe' && <SwipeDeck seeds={swipeSeeds} journalKeys={journalKeys} skippedKeys={skippedKeys} watchlistKeys={watchlistKeys} onSwipe={handleSwipe} onTopChange={setSwipeTop} />}
       </main>
 
       <nav className="tabs tabs-bottom">

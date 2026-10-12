@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import type { SearchResult } from '../types'
-import { DECK_SOURCES, fetchRandomDeck, hasApiKey, searchTitles, type DeckSource } from '../lib/tmdb'
+import { DECK_SOURCES, fetchRandomDeck, hasApiKey, searchTitles, type DeckSource, type Taste } from '../lib/tmdb'
+import type { MediaType } from '../types'
 import { titleKey } from '../lib/titles'
 import { CardFace, SwipeCard, type SwipeCardHandle, type SwipeVerdict } from './SwipeCard'
 
@@ -9,7 +10,28 @@ export interface SwipeAction {
   verdict: SwipeVerdict
 }
 
+const TASTE_KEY = 'movie-journal:taste:v1'
+/** Hoeveel een swipe meetelt voor de genres van die titel */
+const GENRE_WEIGHT: Record<SwipeVerdict, number> = { seen: 1, watchlist: 1.5, skip: -0.3 }
+
+function loadGenres(): Taste['genres'] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TASTE_KEY) ?? '{}') as Partial<Record<MediaType, [number, number][]>>
+    return { movie: new Map(raw.movie ?? []), tv: new Map(raw.tv ?? []) }
+  } catch {
+    return { movie: new Map(), tv: new Map() }
+  }
+}
+
+function saveGenres(genres: Taste['genres']) {
+  try {
+    localStorage.setItem(TASTE_KEY, JSON.stringify({ movie: [...genres.movie], tv: [...genres.tv] }))
+  } catch { /* privémodus */ }
+}
+
 interface Props {
+  /** Titels die je zag of hoog beoordeelde (nieuwste eerst): basis voor aanbevelingen */
+  seeds: Taste['seeds']
   /** Titels die al in je journal staan */
   journalKeys: Set<string>
   /** Titels die eerder als "niet gezien" zijn weggeswipet (bij zoeken tonen we ze wél) */
@@ -23,13 +45,17 @@ interface Props {
 
 const MIN_BUFFER = 5
 
-export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, onTopChange }: Props) {
+export function SwipeDeck({ seeds, journalKeys, skippedKeys, watchlistKeys, onSwipe, onTopChange }: Props) {
   const [source, setSource] = useState<DeckSource>('random')
   const [cards, setCards] = useState<SearchResult[]>([])
   /** Hoe vaak achter elkaar er niets nieuws bijkwam; daarna stoppen (lijst op of alles al bekend) */
   const [page, setPage] = useState({ emptyStreak: 0, hasMore: true })
   /** Al opgehaalde willekeurige pagina's, per lijst (zie fetchRandomDeck) */
   const usedPages = useRef(new Set<string>())
+  /** Genrevoorkeur, bijgewerkt bij elke swipe en per apparaat bewaard */
+  const genres = useRef(loadGenres())
+  const seedsRef = useRef(seeds)
+  seedsRef.current = seeds
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const top = useRef<SwipeCardHandle>(null)
@@ -82,7 +108,7 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
     setLoading(true)
     const request = searching
       ? searchTitles(activeQuery).then((results) => ({ results, hasMore: false }))
-      : fetchRandomDeck(source, usedPages.current).then((results) => ({ results, hasMore: true }))
+      : fetchRandomDeck(source, usedPages.current, { seeds: seedsRef.current, genres: genres.current }).then((results) => ({ results, hasMore: true }))
     request
       .then(({ results, hasMore }) => {
         if (gen !== generation.current) return // inmiddels andere lijst gekozen
@@ -107,8 +133,16 @@ export function SwipeDeck({ journalKeys, skippedKeys, watchlistKeys, onSwipe, on
       const action = { card, verdict }
       setCards((prev) => prev.filter((c) => c !== card))
       onSwipe(action)
+
+      // Smaak bijwerken op basis van de genres van deze titel
+      const weights = genres.current[card.mediaType]
+      for (const id of card.genreIds ?? []) weights.set(id, (weights.get(id) ?? 0) + GENRE_WEIGHT[verdict])
+      saveGenres(genres.current)
+
+      // Zoekresultaat gezien of op de watchlist gezet: zoekopdracht klaar, terug naar de stapel
+      if (searching && verdict !== 'skip') setQuery('')
     },
-    [visible, onSwipe],
+    [visible, onSwipe, searching],
   )
 
 

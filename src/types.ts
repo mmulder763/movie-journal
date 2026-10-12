@@ -63,6 +63,8 @@ export interface SearchResult {
   year?: string
   overview: string
   voteAverage?: number
+  /** TMDB genre-id's (voor de slimme swipe-stapel) */
+  genreIds?: number[]
 }
 
 /** Alle keren dat één titel is gekeken, samengevoegd. */
