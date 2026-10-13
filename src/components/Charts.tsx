@@ -14,6 +14,9 @@ export interface Column {
 /** Verticale (gestapelde) staafgrafiek met tooltip bij hover/tap en een tabel voor screenreaders. */
 export function ColumnChart({ columns, caption, height = 170 }: { columns: Column[]; caption: string; height?: number }) {
   const max = Math.max(1, ...columns.map((c) => c.segments.reduce((n, s) => n + s.value, 0)))
+  // Bij veel kolommen niet elk label tonen (wel in de tooltip): ongeveer 8 labels, altijd de laatste
+  const step = Math.ceil(columns.length / 8)
+  const shortLabel = (label: string) => (/^\d{4}$/.test(label) && columns.length > 8 ? `'${label.slice(2)}` : label)
   return (
     <figure className="chart">
       <div className="columns" style={{ height } as CSSProperties} aria-hidden>
@@ -26,7 +29,7 @@ export function ColumnChart({ columns, caption, height = 170 }: { columns: Colum
                   <span key={s.name} className="column-seg" style={{ flexGrow: s.value, background: s.color }} />
                 ))}
               </div>
-              <span className="column-label">{c.label}</span>
+              <span className="column-label">{(i % step === 0 || i === columns.length - 1) && shortLabel(c.label)}</span>
               {total > 0 && (
                 <span className="chart-tip">
                   <strong>{c.label}: {total}</strong>

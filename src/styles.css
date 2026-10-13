@@ -792,8 +792,8 @@ button.wall-poster { display: block; width: 100%; padding: 0; }
 .stat-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 @media (max-width: 900px) { .stat-tiles { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 520px) { .stat-tiles { grid-template-columns: repeat(2, 1fr); } }
-.stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-@media (max-width: 760px) { .stats-grid { grid-template-columns: 1fr; } }
+.stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .stats-grid { grid-template-columns: minmax(0, 1fr); } }
 .stats-card {
   display: grid; gap: 12px; align-content: start; padding: 18px; border-radius: var(--radius); min-width: 0;
   background: var(--surface); border: 1px solid var(--border); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
@@ -815,7 +815,7 @@ button.wall-poster { display: block; width: 100%; padding: 0; }
 @keyframes grow { from { transform: scaleY(0); } }
 .column-seg { min-height: 2px; flex-basis: 0; }
 .column-seg:last-child { border-radius: 4px 4px 0 0; }
-.column-label { position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 0.68rem; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.column-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); text-align: center; overflow: visible !important; font-size: 0.68rem; color: var(--muted); white-space: nowrap; overflow: hidden; }
 .chart-tip {
   position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translate(-50%, 4px); z-index: 4; pointer-events: none;
   display: grid; gap: 3px; padding: 8px 10px; border-radius: 10px; font-size: 0.75rem; white-space: nowrap;
@@ -1377,6 +1377,12 @@ img.avatar { object-fit: cover; padding: 0; }
   position: absolute; z-index: 2; top: 12px; right: 12px; font-family: var(--display); font-size: 1.25rem; line-height: 1; padding: 5px 8px 3px;
   border-radius: 10px; color: var(--accent-text); background: linear-gradient(120deg, var(--accent), var(--accent-2)); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
 }
+
+/* Grids nooit breder dan het scherm: kolommen mogen krimpen, ook als er een brede (scroll)rij in staat */
+.stats-view, .list-view, .friends-view, .watchlist-view, .friend-profile, .title-sheet, .title-info, .layout { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .layout { grid-template-columns: minmax(0, 1fr) 370px; } }
+.stats-view > *, .stats-card, .list-view > *, .friends-view > *, .friend-profile > *, .title-sheet > * { min-width: 0; }
+.app { overflow-x: clip; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
