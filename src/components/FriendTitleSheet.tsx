@@ -3,6 +3,7 @@ import type { Friend } from '../lib/social'
 import { titleKey } from '../lib/titles'
 import { TitlePreviewSheet } from './WatchItemSheet'
 import { StarRating } from './StarRating'
+import { ReactionBar } from './Reactions'
 
 interface Props {
   item: WatchItem
@@ -39,6 +40,7 @@ export function FriendTitleSheet({ item, friend, mySeen, knownKeys, onAddToWatch
         </button>
       )}
       {onOpenFriend && <button className="btn-text" onClick={onOpenFriend}>Profiel van {first} ›</button>}
+      {watches[0] && <ReactionBar ownerId={friend.id} entryId={[...watches].sort((a, b) => b.createdAt - a.createdAt)[0].id} />}
     </TitlePreviewSheet>
   )
 }

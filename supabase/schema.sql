@@ -115,3 +115,63 @@ create policy "avatars: eigen map aanpassen" on storage.objects
 drop policy if exists "avatars: eigen map opruimen" on storage.objects;
 create policy "avatars: eigen map opruimen" on storage.objects
   for delete to authenticated using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ---------- Reacties op kijkmomenten (emoji of kort bericht) ----------
+create table if not exists public.reactions (
+  id uuid primary key default gen_random_uuid(),
+  -- Van wie het kijkmoment is, en welk kijkmoment (entry-id uit diens journal)
+  owner_id uuid not null references public.profiles (id) on delete cascade,
+  entry_id text not null,
+  from_id uuid not null references public.profiles (id) on delete cascade,
+  emoji text,
+  message text check (char_length(message) <= 280),
+  created_at timestamptz not null default now(),
+  check (emoji is not null or message is not null)
+);
+create index if not exists reactions_owner_idx on public.reactions (owner_id, created_at desc);
+
+alter table public.reactions enable row level security;
+drop policy if exists "reactions: lezen als ingelogd" on public.reactions;
+create policy "reactions: lezen als ingelogd" on public.reactions for select to authenticated using (true);
+drop policy if exists "reactions: zelf plaatsen" on public.reactions;
+create policy "reactions: zelf plaatsen" on public.reactions for insert to authenticated with check (from_id = auth.uid());
+drop policy if exists "reactions: eigen verwijderen" on public.reactions;
+create policy "reactions: eigen verwijderen" on public.reactions for delete to authenticated using (from_id = auth.uid());
+
+-- ---------- Aanraden aan een vriend ----------
+create table if not exists public.recommendations (
+  id uuid primary key default gen_random_uuid(),
+  from_id uuid not null references public.profiles (id) on delete cascade,
+  to_id uuid not null references public.profiles (id) on delete cascade,
+  tmdb_id integer not null,
+  media_type text not null check (media_type in ('movie', 'tv')),
+  title text not null,
+  poster_path text,
+  backdrop_path text,
+  year text,
+  note text check (char_length(note) <= 280),
+  dismissed boolean not null default false,
+  created_at timestamptz not null default now(),
+  check (from_id <> to_id)
+);
+create index if not exists recommendations_to_idx on public.recommendations (to_id, created_at desc);
+
+alter table public.recommendations enable row level security;
+drop policy if exists "recommendations: eigen zien" on public.recommendations;
+create policy "recommendations: eigen zien" on public.recommendations for select to authenticated using (auth.uid() in (from_id, to_id));
+drop policy if exists "recommendations: sturen" on public.recommendations;
+create policy "recommendations: sturen" on public.recommendations for insert to authenticated with check (from_id = auth.uid());
+drop policy if exists "recommendations: ontvanger werkt bij" on public.recommendations;
+create policy "recommendations: ontvanger werkt bij" on public.recommendations for update to authenticated using (to_id = auth.uid()) with check (to_id = auth.uid());
+drop policy if exists "recommendations: verwijderen" on public.recommendations;
+create policy "recommendations: verwijderen" on public.recommendations for delete to authenticated using (auth.uid() in (from_id, to_id));
+
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'reactions') then
+    alter publication supabase_realtime add table public.reactions;
+  end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'recommendations') then
+    alter publication supabase_realtime add table public.recommendations;
+  end if;
+end $$;

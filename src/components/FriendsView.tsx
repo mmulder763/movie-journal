@@ -5,6 +5,8 @@ import { tasteMatch, type Friend, type SocialState } from '../lib/social'
 import { summarizeTitles } from '../lib/titles'
 import { Poster } from './Poster'
 import { StarRating } from './StarRating'
+import { ReactionBar } from './Reactions'
+import type { Recommendation } from '../lib/inbox'
 
 interface Props {
   me: Profile
@@ -14,6 +16,9 @@ interface Props {
   /** Tik op een item in de feed: details van die titel, vanuit die vriend */
   onOpenTitle: (entry: Entry, friend: Friend) => void
   notify: (text: string) => void
+  /** Aanbevelingen voor jou van vrienden */
+  received?: Recommendation[]
+  onOpenRecommendation?: (r: Recommendation) => void
 }
 
 /** Uitnodigingstekst bij delen (de link zelf gaat er los bij) */
@@ -70,7 +75,7 @@ const watchedLabel = (date: string | null) => {
   return `gezien op ${new Date(`${date}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })}`
 }
 
-export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, notify }: Props) {
+export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, notify, received = [], onOpenRecommendation }: Props) {
   const inviteLink = `${location.origin}${import.meta.env.BASE_URL}?vriend=${me.username}`
 
   // Bij openen van de tab altijd verse stand ophalen
@@ -123,6 +128,26 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, 
         </div>
         <button className="btn-ghost" onClick={share}>🔗 Nodig uit</button>
       </div>
+
+      {received.length > 0 && (
+        <div className="friend-section">
+          <h4 className="section-label">Aanbevolen voor jou</h4>
+          <ul className="group-titles rec-strip">
+            {received.map((r, i) => {
+              const from = social.friends.find((f) => f.id === r.from_id)
+              return (
+                <li key={r.id} style={{ '--i': i } as CSSProperties}>
+                  <button onClick={() => onOpenRecommendation?.(r)}>
+                    <Poster path={r.poster_path} title={r.title} size="w185" />
+                    <span className="group-title-name">{r.title}</span>
+                    {from && <span className="feed-who"><Avatar profile={from} size={18} /> {from.display_name.split(' ')[0]}</span>}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
 
       <div className="friend-section">
         <h4 className="section-label">Je groep {social.friends.length > 0 && <span className="muted small">· {social.friends.length}</span>}</h4>
@@ -178,6 +203,7 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, 
                       </span>
                       <span className="friend-chevron" aria-hidden>›</span>
                     </button>
+                    <ReactionBar ownerId={friend.id} entryId={entry.id} />
                   </li>
                 ))}
               </ul>

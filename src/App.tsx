@@ -23,6 +23,11 @@ import { FriendProfile } from './components/FriendProfile'
 import { FriendTitleSheet } from './components/FriendTitleSheet'
 import { AccountSheet } from './components/AccountSheet'
 import { useSocial, type Friend } from './lib/social'
+import { SocialContext, recToItem, useInbox, type Recommendation } from './lib/inbox'
+import { RecommendSheet } from './components/RecommendSheet'
+import { ContinueWatching, UpcomingStrip } from './components/Upcoming'
+import { useContinueWatching, useUpcoming } from './lib/upcoming'
+import { InboxSheet } from './components/InboxSheet'
 import type { Profile } from './lib/supabase'
 import { StatsView } from './components/StatsView'
 import { ShareDialog } from './components/ShareDialog'
@@ -60,6 +65,12 @@ interface AppProps {
 export default function App({ backend, me, invite, onInviteHandled, onSignOut, onProfileUpdated }: AppProps) {
   const TABS = me ? [...BASE_TABS, FRIENDS_TAB] : BASE_TABS
   const social = useSocial(me)
+  const inbox = useInbox(me)
+  const people = useMemo(() => new Map<string, Profile>([...(me ? [[me.id, me] as const] : []), ...social.friends.map((f) => [f.id, f as Profile] as const)]), [me, social.friends])
+  const [recommendItem, setRecommendItem] = useState<WatchItem | null>(null)
+  const [inboxOpen, setInboxOpen] = useState(false)
+  const [recPreview, setRecPreview] = useState<Recommendation | null>(null)
+  const socialCtx = useMemo(() => ({ me, people, inbox, openRecommend: setRecommendItem }), [me, people, inbox])
   const [openFriend, setOpenFriend] = useState<Friend | null>(null)
   /** Na een "gezien"-swipe: snel beoordelen */
   const [quickRate, setQuickRate] = useState<{ id: string; title: string; posterPath: string | null } | null>(null)
@@ -105,6 +116,9 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   }, [entries])
 
   const titles = useMemo(() => summarizeTitles(entries), [entries])
+  const continueWatching = useContinueWatching(titles)
+  const upcoming = useUpcoming(titles, journal.watchlist)
+
   // Basis voor aanbevelingen bij het swipen: recent gelogd, zonder titels die je slecht vond
   const swipeSeeds = useMemo(
     () => [...titles]
@@ -242,6 +256,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
 
 
   return (
+    <SocialContext.Provider value={socialCtx}>
     <div className="app">
       <Ambient image={ambientImage} />
       <Intro />
@@ -263,6 +278,11 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
         <div className="header-actions">
           <SyncBadge status={status} onRetry={sync} backendLabel={backend.label} />
           {me && (
+            <button className="icon-btn bell-btn" onClick={() => { setInboxOpen(true) }} aria-label={`Meldingen${inbox.unread ? ` (${inbox.unread} nieuw)` : ''}`}>
+              🔔{inbox.unread > 0 && <span className="bell-badge">{inbox.unread}</span>}
+            </button>
+          )}
+          {me && (
             <button className="avatar-btn" onClick={() => setAccount(true)} aria-label="Account" title={`@${me.username}`}>
               <Avatar profile={me} size={34} />
             </button>
@@ -276,6 +296,15 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
             <NowShowing titles={titles} friends={social.friends}
               onOpenSlide={(slide) => (slide.friend ? setFriendTitle({ item: { ...slide, addedAt: 0 }, friend: slide.friend }) : setOpenTitle(slide.titleKey))}
               onAdd={() => setDialog({ initial: null, isNew: true })} onSlideChange={setMarqueeTitle} />
+            <ContinueWatching items={continueWatching}
+              onOpen={(n) => setOpenTitle(n.title.key)}
+              onLog={(n) => {
+                const entry = { ...entryFromResult({ ...n.title, addedAt: 0 }, today()), season: n.season, episode: n.episode }
+                dispatch({ type: 'upsert', entry })
+                notify(`✓ ${n.title.title} S${n.season}E${n.episode} gezien`)
+              }} />
+            <UpcomingStrip items={upcoming}
+              onOpen={(u) => (journalKeys.has(titleKey(u.item)) ? setOpenTitle(titleKey(u.item)) : setPreviewItem(u.item))} />
             <div className="layout">
               <Calendar
                 year={view.year}
@@ -362,6 +391,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
         )}
         {tab === 'friends' && me && (
           <FriendsView me={me} myEntries={entries} social={social} onOpenFriend={setOpenFriend} notify={notify}
+            received={inbox.received} onOpenRecommendation={setRecPreview}
             onOpenTitle={(entry, friend) => setFriendTitle({ item: { ...entry, addedAt: 0 }, friend })} />
         )}
         {tab === 'swipe' && quickRate && (
@@ -456,6 +486,47 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
         </TitlePreviewSheet>
       )}
 
+      {recommendItem && (
+        <RecommendSheet item={recommendItem} friends={social.friends} onClose={() => setRecommendItem(null)}
+          onSend={async (ids, note) => {
+            await inbox.recommend(ids, recommendItem, note)
+            notify(`📨 ${recommendItem.title} aangeraden`)
+          }} />
+      )}
+
+      {inboxOpen && (
+        <InboxSheet notifications={inbox.notifications} seenAt={inbox.seenAt} people={people} myEntries={entries}
+          onClose={() => { setInboxOpen(false); inbox.markSeen() }}
+          onOpenRecommendation={(r) => setRecPreview(r)}
+          onOpenMyEntry={(entry) => { setInboxOpen(false); inbox.markSeen(); setOpenTitle(titleKey(entry)) }} />
+      )}
+
+      {recPreview && (() => {
+        const item = recToItem(recPreview)
+        const key = titleKey(item)
+        const from = people.get(recPreview.from_id)?.display_name.split(' ')[0] ?? 'Iemand'
+        return (
+          <TitlePreviewSheet item={item} onClose={() => setRecPreview(null)}
+            status={`📨 Aangeraden door ${from}${recPreview.note ? `: “${recPreview.note}”` : ''}`}>
+            {journalKeys.has(key) ? <span className="muted small">✓ Je zag dit al</span> : (
+              <>
+                <button className="btn-primary" disabled={watchlistKeys.has(key)} onClick={() => { addToWatchlist(item); void inbox.dismiss(recPreview.id) }}>
+                  {watchlistKeys.has(key) ? '✓ Op je watchlist' : '🔖 Op watchlist'}
+                </button>
+                <button className="btn-ghost" onClick={() => {
+                  void inbox.dismiss(recPreview.id)
+                  setRecPreview(null)
+                  setDialog({ initial: entryFromResult(item, today()), isNew: true })
+                }}>✓ Gezien</button>
+              </>
+            )}
+            {!recPreview.dismissed && (
+              <button className="btn-text" onClick={() => { void inbox.dismiss(recPreview.id); setRecPreview(null) }}>Niet interessant</button>
+            )}
+          </TitlePreviewSheet>
+        )
+      })()}
+
       {account && me && onSignOut && (
         <AccountSheet me={me} syncLabel={backend.label} onClose={() => setAccount(false)} onSignOut={onSignOut}
           onProfileUpdated={(p) => onProfileUpdated?.(p)} />
@@ -499,6 +570,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
         />
       )}
     </div>
+    </SocialContext.Provider>
   )
 }
 
@@ -511,7 +583,7 @@ function SyncBadge({ status, onRetry, backendLabel }: { status: SyncStatus; onRe
       title={status.state === 'offline' ? `Niet gesynchroniseerd: ${status.error}. Wijzigingen worden bewaard en later verstuurd.` : `Gesynchroniseerd met ${backendLabel}`}
     >
       <span className="sync-dot" />
-      {label}
+      <span className="sync-label">{label}</span>
     </button>
   )
 }

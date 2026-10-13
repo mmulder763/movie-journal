@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
 
-type Mode = 'login' | 'signup'
+type Mode = 'login' | 'signup' | 'forgot'
 
 /** Inloggen of account aanmaken (e-mail + wachtwoord, met gebruikersnaam voor vrienden). */
 export function Auth({ inviteFrom }: { inviteFrom?: string | null }) {
@@ -16,6 +16,12 @@ export function Auth({ inviteFrom }: { inviteFrom?: string | null }) {
     e.preventDefault()
     setState({ busy: true })
     try {
+      if (mode === 'forgot') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${location.origin}${import.meta.env.BASE_URL}` })
+        if (error) throw new Error(error.message)
+        setState({ busy: false, info: 'Check je mail: je krijgt een link om een nieuw wachtwoord te kiezen.' })
+        return
+      }
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
         if (error) throw new Error(error.message === 'Invalid login credentials' ? 'E-mail of wachtwoord klopt niet.' : error.message)
@@ -58,10 +64,11 @@ export function Auth({ inviteFrom }: { inviteFrom?: string | null }) {
           </ul>
         )}
 
-        <div className="segmented auth-switch">
+        {mode !== 'forgot' && <div className="segmented auth-switch">
           <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => setMode('login')}>Inloggen</button>
           <button type="button" className={mode === 'signup' ? 'active' : ''} onClick={() => setMode('signup')}>Account maken</button>
-        </div>
+        </div>}
+        {mode === 'forgot' && <p className="muted small">Vul je e-mailadres in, dan sturen we je een link om een nieuw wachtwoord te kiezen.</p>}
 
         {mode === 'signup' && (
           <>
@@ -79,17 +86,48 @@ export function Auth({ inviteFrom }: { inviteFrom?: string | null }) {
           E-mail
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
         </label>
-        <label>
-          Wachtwoord
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
-        </label>
+        {mode !== 'forgot' && (
+          <label>
+            Wachtwoord
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
+          </label>
+        )}
 
         {state.error && <p className="error small">{state.error}</p>}
         {state.info && <p className="small" style={{ color: 'var(--accent)' }}>{state.info}</p>}
         <button className="btn-primary" type="submit" disabled={state.busy}>
-          {state.busy ? 'Even geduld…' : mode === 'login' ? 'Inloggen' : 'Account maken'}
+          {state.busy ? 'Even geduld…' : mode === 'login' ? 'Inloggen' : mode === 'forgot' ? 'Stuur resetlink' : 'Account maken'}
         </button>
+        {mode === 'login' && <button type="button" className="btn-text" onClick={() => { setMode('forgot'); setState({ busy: false }) }}>Wachtwoord vergeten?</button>}
+        {mode === 'forgot' && <button type="button" className="btn-text" onClick={() => { setMode('login'); setState({ busy: false }) }}>← Terug naar inloggen</button>}
+      </form>
+    </div>
+  )
+}
+
+/** Na het klikken op de resetlink: nieuw wachtwoord kiezen */
+export function NewPassword({ onDone }: { onDone: () => void }) {
+  const [password, setPassword] = useState('')
+  const [state, setState] = useState<{ busy: boolean; error?: string }>({ busy: false })
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setState({ busy: true })
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) return setState({ busy: false, error: error.message })
+    onDone()
+  }
+  return (
+    <div className="setup">
+      <form className="setup-card" onSubmit={submit}>
+        <img className="setup-logo" src={`${import.meta.env.BASE_URL}icon.svg`} alt="" />
+        <h1>Nieuw <em>wachtwoord</em></h1>
+        <label>
+          Wachtwoord
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required autoComplete="new-password" autoFocus />
+        </label>
+        {state.error && <p className="error small">{state.error}</p>}
+        <button className="btn-primary" type="submit" disabled={state.busy}>{state.busy ? 'Opslaan…' : 'Opslaan en verder'}</button>
       </form>
     </div>
   )

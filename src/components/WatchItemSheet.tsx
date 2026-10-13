@@ -4,6 +4,7 @@ import { Modal } from './Modal'
 import { Poster } from './Poster'
 import { Scores } from './Scores'
 import { TitleInfo } from './TitleInfo'
+import { useSocialContext } from '../lib/inbox'
 
 interface PreviewProps {
   item: WatchItem
@@ -16,6 +17,7 @@ interface PreviewProps {
 
 /** Detailscherm voor een titel die (nog) niet in je kijkgeschiedenis staat: info, scores, streaming. */
 export function TitlePreviewSheet({ item, status, onClose, children }: PreviewProps) {
+  const social = useSocialContext()
   return (
     <Modal title={item.title} onClose={onClose} backdrop={item.backdropPath}>
       <div className="title-sheet">
@@ -27,6 +29,7 @@ export function TitlePreviewSheet({ item, status, onClose, children }: PreviewPr
             {status && <span className="muted small">{status}</span>}
             <Scores item={item} />
             {children}
+            {social?.me && <button className="btn-text recommend-btn" onClick={() => social.openRecommend(item)}>📨 Aanraden</button>}
           </div>
         </div>
         <TitleInfo mediaType={item.mediaType} tmdbId={item.tmdbId} title={item.title} />

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import App from './App'
-import { Auth } from './components/Auth'
+import { Auth, NewPassword } from './components/Auth'
 import { localBackend, supabaseBackend, type Backend } from './lib/backends'
 import { setApiKeys, type ApiKeys } from './lib/keys'
 import { PROFILE_FIELDS } from './lib/avatar'
@@ -45,11 +45,16 @@ export default function Root() {
   const [state, setState] = useState<State>({ phase: 'loading' })
   const [session, setSession] = useState<Session | null | undefined>(undefined)
   const [invite] = useState(readInvite)
+  /** Binnengekomen via een resetlink: eerst een nieuw wachtwoord kiezen */
+  const [recovering, setRecovering] = useState(false)
 
   useEffect(() => {
     if (!supabaseConfigured) return
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data } = supabase.auth.onAuthStateChange((_event, s) => setSession(s))
+    const { data } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovering(true)
+      setSession(s)
+    })
     return () => data.subscription.unsubscribe()
   }, [])
 
@@ -107,6 +112,7 @@ export default function Root() {
     setState({ phase: 'auth' })
   }
 
+  if (recovering) return <NewPassword onDone={() => setRecovering(false)} />
   if (state.phase === 'auth') return <Auth inviteFrom={invite} />
   if (state.phase === 'loading') return <div className="boot"><div className="reel-spinner" /></div>
   if (state.phase === 'error') {

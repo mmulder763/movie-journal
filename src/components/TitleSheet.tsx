@@ -8,6 +8,8 @@ import { Scores } from './Scores'
 import { TitleInfo } from './TitleInfo'
 import { SeasonProgress } from './EpisodePicker'
 import { Avatar } from './FriendsView'
+import { useSocialContext } from '../lib/inbox'
+import { ReactionBar } from './Reactions'
 import type { Profile } from '../lib/supabase'
 
 interface Props {
@@ -24,6 +26,7 @@ interface Props {
 
 export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, onRemoveAll, friendWatches = [] }: Props) {
   const times = title.watches.length
+  const social = useSocialContext()
   return (
     <Modal title={title.title} onClose={onClose} backdrop={title.backdropPath}>
       <div className="title-sheet">
@@ -44,6 +47,9 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, o
               </span>
             )}
             <Scores item={title} />
+            {social?.me && (
+              <button className="btn-text recommend-btn" onClick={() => social.openRecommend({ ...title, addedAt: 0 })}>📨 Aanraden</button>
+            )}
             <button className="btn-primary" onClick={onWatchAgain}>
               {title.mediaType === 'tv' ? '+ Verder gekeken' : '+ Opnieuw gekeken'}
             </button>
@@ -105,6 +111,7 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, o
                 </span>
                 {w.rating != null && <StarRating value={w.rating} />}
                 {w.note && <p className="entry-note">{w.note}</p>}
+                {social?.me && <ReactionBar ownerId={social.me.id} entryId={w.id} readOnly />}
               </button>
               {w.date && (
                 <button className="icon-btn" onClick={() => onGoToDate(w.date!)} aria-label="Naar deze dag in de agenda">📅</button>

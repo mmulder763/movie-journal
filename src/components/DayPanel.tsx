@@ -6,6 +6,8 @@ import { Poster } from './Poster'
 import { StarRating } from './StarRating'
 import { Avatar } from './FriendsView'
 import type { FriendWatch } from './Calendar'
+import { ReactionSummary } from './Reactions'
+import { useSocialContext } from '../lib/inbox'
 
 interface Props {
   date: string
@@ -18,6 +20,7 @@ interface Props {
 }
 
 export function DayPanel({ date, entries, onAdd, onEdit, friendWatches = [], onOpenFriendTitle }: Props) {
+  const social = useSocialContext()
   const hero = entries.find((e) => e.backdropPath) ?? entries[0]
   const heroImg = hero && (backdropUrl(hero.backdropPath) ?? posterUrl(hero.posterPath, 'w500'))
 
@@ -52,6 +55,7 @@ export function DayPanel({ date, entries, onAdd, onEdit, friendWatches = [], onO
                   </span>
                   {e.rating != null && <StarRating value={e.rating} />}
                   {e.note && <p className="entry-note">{e.note}</p>}
+                  {social?.me && <ReactionSummary ownerId={social.me.id} entryId={e.id} />}
                 </div>
                 <span className="ticket-stub" aria-hidden>{e.cinema ? 'ADMIT ONE' : 'AT HOME'}</span>
               </button>

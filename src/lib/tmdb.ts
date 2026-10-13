@@ -437,6 +437,41 @@ export async function fetchTrending(): Promise<SearchResult[]> {
   return data.results.filter(isTitle).filter((r) => r.poster_path).map((r) => toResult(r, r.media_type))
 }
 
+export interface TvStatus {
+  seasons: { number: number; episodeCount: number }[]
+  lastAired?: { season: number; episode: number }
+  next?: { season: number; episode: number; date: string; name?: string }
+  inProduction: boolean
+}
+
+interface EpisodeRef { season_number: number; episode_number: number; air_date?: string | null; name?: string }
+
+/** Afleveringsstand van een serie: seizoenen, laatst uitgezonden en eerstvolgende aflevering. */
+export async function fetchTvStatus(tvId: number): Promise<TvStatus> {
+  const d = await request<{
+    seasons?: { season_number: number; episode_count: number }[]
+    last_episode_to_air?: EpisodeRef | null
+    next_episode_to_air?: EpisodeRef | null
+    in_production?: boolean
+  }>(`/tv/${tvId}`)
+  return {
+    seasons: (d.seasons ?? []).filter((x) => x.season_number > 0 && x.episode_count > 0).map((x) => ({ number: x.season_number, episodeCount: x.episode_count })),
+    lastAired: d.last_episode_to_air ? { season: d.last_episode_to_air.season_number, episode: d.last_episode_to_air.episode_number } : undefined,
+    next: d.next_episode_to_air?.air_date
+      ? { season: d.next_episode_to_air.season_number, episode: d.next_episode_to_air.episode_number, date: d.next_episode_to_air.air_date, name: d.next_episode_to_air.name }
+      : undefined,
+    inProduction: !!d.in_production,
+  }
+}
+
+/** Releasedatum van een film: eerste NL-bioscoopdatum, anders de algemene releasedatum. */
+export async function fetchMovieRelease(tmdbId: number): Promise<string | null> {
+  const nl = await fetchCinemaDate(tmdbId).catch(() => null)
+  if (nl) return nl
+  const d = await request<{ release_date?: string }>(`/movie/${tmdbId}`)
+  return d.release_date || null
+}
+
 export const profileUrl = (path: string | null) => (path ? `${IMAGE_BASE}/w185${path}` : null)
 export const logoUrl = (path: string) => `${IMAGE_BASE}/w92${path}`
 
