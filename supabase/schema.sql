@@ -175,3 +175,45 @@ begin
     alter publication supabase_realtime add table public.recommendations;
   end if;
 end $$;
+
+-- ---------- Pushmeldingen ----------
+create table if not exists public.push_subscriptions (
+  endpoint text primary key,
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+alter table public.push_subscriptions enable row level security;
+drop policy if exists "push: eigen abonnementen" on public.push_subscriptions;
+create policy "push: eigen abonnementen" on public.push_subscriptions for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Nieuwe reactie of aanbeveling: edge function "send-push" aanroepen (asynchroon via pg_net).
+-- URL en gedeeld geheim staan in app_private.settings, zodat ze niet in dit bestand hoeven.
+create extension if not exists pg_net with schema extensions;
+create schema if not exists app_private;
+create table if not exists app_private.settings (key text primary key, value text not null);
+revoke all on schema app_private from public, anon, authenticated;
+
+create or replace function app_private.notify_push()
+returns trigger language plpgsql security definer set search_path = public, extensions as $$
+declare
+  url text := (select value from app_private.settings where key = 'push_url');
+  secret text := (select value from app_private.settings where key = 'push_secret');
+begin
+  if url is not null then
+    perform net.http_post(
+      url := url,
+      headers := jsonb_build_object('Content-Type', 'application/json', 'x-push-secret', secret),
+      body := jsonb_build_object('table', tg_table_name, 'record', to_jsonb(new))
+    );
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists push_on_reaction on public.reactions;
+create trigger push_on_reaction after insert on public.reactions for each row execute function app_private.notify_push();
+drop trigger if exists push_on_recommendation on public.recommendations;
+create trigger push_on_recommendation after insert on public.recommendations for each row execute function app_private.notify_push();

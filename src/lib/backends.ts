@@ -62,7 +62,7 @@ export function supabaseBackend(userId: string, label: string): Backend {
       const { data, error } = await supabase.from('app_config').select('key, value')
       if (error) throw new Error(`Database: ${error.message}`)
       const get = (k: string) => data.find((r) => r.key === k)?.value
-      return { tmdb: get('tmdb_api_key'), omdb: get('omdb_api_key') }
+      return { tmdb: get('tmdb_api_key'), omdb: get('omdb_api_key'), vapid: get('vapid_public_key') }
     },
   }
 }

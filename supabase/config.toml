@@ -1,0 +1,5 @@
+project_id = "iitnwodcgrrzkwnmczmy"
+
+[functions.send-push]
+# Aangeroepen door de database-trigger met een gedeeld geheim, niet met een gebruikers-JWT
+verify_jwt = false

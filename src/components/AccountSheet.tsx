@@ -1,4 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { disablePush, enablePush, pushState, type PushState } from '../lib/push'
+import { vapidKey } from '../lib/keys'
 import type { Profile } from '../lib/supabase'
 import { removeAvatar, updateProfile, uploadAvatar } from '../lib/avatar'
 import { Modal } from './Modal'
@@ -69,11 +71,65 @@ export function AccountSheet({ me, syncLabel, onClose, onSignOut, onProfileUpdat
         <span className="muted small">@{me.username}</span>
 
         {error && <p className="error small">{error}</p>}
+        <PushToggle me={me} />
+
         <p className="muted small">
           Je journal wordt opgeslagen in je account ({syncLabel}). Iedereen met een account in de app kan je kijkgeschiedenis, ratings, notities en watchlist zien.
         </p>
         <button className="btn-ghost" onClick={onSignOut}>Uitloggen</button>
       </div>
     </Modal>
+  )
+}
+
+const PUSH_TEXT: Record<PushState, string> = {
+  on: 'Aan op dit apparaat: je krijgt een melding bij reacties en aanbevelingen.',
+  off: 'Krijg een melding als iemand op je reageert of je iets aanraadt.',
+  denied: 'Meldingen zijn geblokkeerd. Zet ze aan in de instellingen van je telefoon of browser.',
+  'needs-install': 'Op iPhone werken meldingen alleen als de app op je beginscherm staat: Deel → "Zet op beginscherm", en open hem daarvandaan.',
+  unsupported: 'Deze browser ondersteunt geen pushmeldingen.',
+}
+
+function PushToggle({ me }: { me: Profile }) {
+  const [state, setState] = useState<PushState | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    void pushState().then(setState)
+  }, [])
+  if (!state) return null
+
+  const toggle = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      if (state === 'on') await disablePush()
+      else {
+        const key = vapidKey()
+        if (!key) throw new Error('Meldingen zijn nog niet ingesteld op de server.')
+        await enablePush(me, key)
+      }
+      setState(await pushState())
+    } catch (err) {
+      setError((err as Error).message)
+      setState(await pushState())
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="push-toggle">
+      <div>
+        <strong>🔔 Meldingen</strong>
+        <span className="muted small">{PUSH_TEXT[state]}</span>
+      </div>
+      {(state === 'on' || state === 'off') && (
+        <button className={`switch ${state === 'on' ? 'on' : ''}`} onClick={toggle} disabled={busy} role="switch" aria-checked={state === 'on'} aria-label="Meldingen">
+          <span />
+        </button>
+      )}
+      {error && <p className="error small">{error}</p>}
+    </div>
   )
 }
