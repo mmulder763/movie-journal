@@ -10,6 +10,32 @@ export const hasApiKey = () => Boolean(tmdbKey())
 // Een v4 Read Access Token is een JWT; een v3 key is een korte hex-string.
 const isBearerToken = (k: string) => k.startsWith('eyJ')
 
+/** Titels altijd in het Engels; beschrijvingen e.d. in het Nederlands */
+const TITLE_LANGUAGE = 'en-US'
+
+/**
+ * Lijst-verzoek in beide talen tegelijk: Nederlandse beschrijving, Engelse titel.
+ * `key` is het veld met de lijst in het antwoord ('results' of 'items').
+ */
+async function requestList<T extends Record<string, unknown>>(path: string, params: Record<string, string> = {}, key = 'results', signal?: AbortSignal): Promise<T> {
+  const [nl, en] = await Promise.all([
+    request<T>(path, params, signal),
+    request<T>(path, { ...params, language: TITLE_LANGUAGE }, signal),
+  ])
+  const english = new Map(((en[key] as ApiResult[] | undefined) ?? []).map((r) => [`${r.media_type ?? ''}-${r.id}`, r]))
+  const merged = ((nl[key] as ApiResult[] | undefined) ?? []).map((r) => {
+    const e = english.get(`${r.media_type ?? ''}-${r.id}`)
+    return e ? { ...r, title: e.title ?? r.title, name: e.name ?? r.name } : r
+  })
+  return { ...nl, [key]: merged }
+}
+
+/** Engelse titel van één titel */
+export async function fetchEnglishTitle(mediaType: MediaType, tmdbId: number): Promise<string | undefined> {
+  const d = await request<{ title?: string; name?: string }>(`/${mediaType}/${tmdbId}`, { language: TITLE_LANGUAGE })
+  return d.title ?? d.name
+}
+
 async function request<T>(path: string, params: Record<string, string> = {}, signal?: AbortSignal): Promise<T> {
   const key = tmdbKey()
   if (!key) throw new Error('Geen TMDB API key ingesteld.')
@@ -59,7 +85,7 @@ const isTitle = (r: ApiResult): r is ApiResult & { media_type: MediaType } =>
 
 /** Zoekt films én series in één keer. */
 export async function searchTitles(query: string, signal?: AbortSignal): Promise<SearchResult[]> {
-  const data = await request<{ results: ApiResult[] }>('/search/multi', { query, include_adult: 'false' }, signal)
+  const data = await requestList<{ results: ApiResult[] }>('/search/multi', { query, include_adult: 'false' }, 'results', signal)
   return data.results.filter(isTitle).map((r) => toResult(r, r.media_type))
 }
 
@@ -90,10 +116,10 @@ export const CURATED_LISTS: CuratedList[] = [
 /** Alle titels van een TMDB-lijst, in volgorde, met hun positie */
 export async function fetchCuratedList(id: number): Promise<SearchResult[]> {
   // De lijst-API geeft 20 titels per pagina: eerst pagina 1, dan de rest tegelijk
-  const first = await request<{ items: ApiResult[]; total_pages?: number }>(`/list/${id}`, { page: '1' })
+  const first = await requestList<{ items: ApiResult[]; total_pages?: number }>(`/list/${id}`, { page: '1' }, 'items')
   const pages = Math.min(first.total_pages ?? 1, 20)
   const rest = await Promise.all(
-    Array.from({ length: pages - 1 }, (_, i) => request<{ items: ApiResult[] }>(`/list/${id}`, { page: String(i + 2) })),
+    Array.from({ length: pages - 1 }, (_, i) => requestList<{ items: ApiResult[] }>(`/list/${id}`, { page: String(i + 2) }, 'items')),
   )
   return [first, ...rest].flatMap((d) => d.items)
     .filter(isTitle)
@@ -198,7 +224,7 @@ async function recommendations(type: MediaType, tmdbId: number, used: Set<string
   const key = `rec:${type}:${tmdbId}`
   if (used.has(key)) return []
   used.add(key)
-  const data = await request<{ results: ApiResult[] }>(`/${type}/${tmdbId}/recommendations`)
+  const data = await requestList<{ results: ApiResult[] }>(`/${type}/${tmdbId}/recommendations`)
   // Ook hier: geen obscure titels
   const min = type === 'movie' ? 300 : 100
   return data.results.filter((r) => r.poster_path && (r.vote_count ?? 0) >= min).map((r) => toResult(r, type))
@@ -219,7 +245,7 @@ async function randomPage(list: 'discover' | 'popular' | 'top', type: MediaType,
   const page = pick(free)
   used.add(`${listKey}:${page}`)
 
-  const data = await request<{ results: ApiResult[] }>(path, { ...params, page: String(page) })
+  const data = await requestList<{ results: ApiResult[] }>(path, { ...params, page: String(page) })
   return data.results.filter((r) => r.poster_path).map((r) => toResult(r, type))
 }
 
@@ -456,12 +482,13 @@ export async function fetchSeasonEpisodes(tvId: number, season: number): Promise
 
 /** Basisgegevens van één titel (voor weggeswipete titels van vóór het opslaan van titelgegevens) */
 export async function fetchBasic(mediaType: MediaType, tmdbId: number): Promise<SearchResult> {
-  return toResult(await request<ApiResult>(`/${mediaType}/${tmdbId}`), mediaType)
+  const [nl, title] = await Promise.all([request<ApiResult>(`/${mediaType}/${tmdbId}`), fetchEnglishTitle(mediaType, tmdbId)])
+  return toResult({ ...nl, title: mediaType === 'movie' ? title : undefined, name: mediaType === 'tv' ? title : undefined }, mediaType)
 }
 
 /** Wat deze week populair is (films en series), voor suggesties in het zoekscherm */
 export async function fetchTrending(): Promise<SearchResult[]> {
-  const data = await request<{ results: ApiResult[] }>('/trending/all/week')
+  const data = await requestList<{ results: ApiResult[] }>('/trending/all/week')
   return data.results.filter(isTitle).filter((r) => r.poster_path).map((r) => toResult(r, r.media_type))
 }
 
