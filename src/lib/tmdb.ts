@@ -73,6 +73,34 @@ export const DECK_SOURCES: [DeckSource, string][] = [
   ['top', 'Best beoordeeld'],
 ]
 
+/** Samengestelde lijsten (TMDB-lijsten) om in volgorde door te swipen */
+export interface CuratedList {
+  id: number
+  name: string
+  description: string
+}
+
+export const CURATED_LISTS: CuratedList[] = [
+  { id: 634, name: 'IMDb Top 250', description: 'De 250 best beoordeelde films op IMDb' },
+  { id: 28, name: 'Oscarwinnaars', description: 'Alle winnaars van de Oscar voor Beste Film' },
+  { id: 10, name: 'Grootste kaskrakers', description: 'De 50 films met de hoogste opbrengst ooit' },
+  { id: 1, name: 'Marvel', description: 'Alle films en series uit het Marvel-universum' },
+]
+
+/** Alle titels van een TMDB-lijst, in volgorde, met hun positie */
+export async function fetchCuratedList(id: number): Promise<SearchResult[]> {
+  // De lijst-API geeft 20 titels per pagina: eerst pagina 1, dan de rest tegelijk
+  const first = await request<{ items: ApiResult[]; total_pages?: number }>(`/list/${id}`, { page: '1' })
+  const pages = Math.min(first.total_pages ?? 1, 20)
+  const rest = await Promise.all(
+    Array.from({ length: pages - 1 }, (_, i) => request<{ items: ApiResult[] }>(`/list/${id}`, { page: String(i + 2) })),
+  )
+  return [first, ...rest].flatMap((d) => d.items)
+    .filter(isTitle)
+    .filter((r) => r.poster_path)
+    .map((r, i) => ({ ...toResult(r, r.media_type), rank: i + 1 }))
+}
+
 /** Willekeurige volgorde (Fisher–Yates) */
 function shuffle<T>(items: T[]): T[] {
   const a = [...items]

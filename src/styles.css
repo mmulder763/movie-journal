@@ -638,7 +638,7 @@ img.poster.loaded { filter: none; opacity: 1; }
 /* Toast */
 .toast {
   position: fixed; z-index: 60; left: 50%; top: calc(14px + env(safe-area-inset-top)); transform: translateX(-50%);
-  max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 14px; font-size: 0.9rem; font-weight: 600;
+  width: max-content; max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 14px; font-size: 0.9rem; font-weight: 600;
   background: rgba(14, 20, 18, 0.78); backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass);
   border: 1px solid rgba(62, 232, 160, 0.35); box-shadow: 0 20px 40px -16px rgba(0, 0, 0, 0.9), 0 0 30px -10px rgba(62, 232, 160, 0.5);
   animation: toast-in 0.5s var(--spring) both, toast-out 0.4s ease 2.8s forwards;
@@ -663,6 +663,10 @@ a.score:hover { transform: translateY(-2px); border-color: rgba(62, 232, 160, 0.
 @keyframes shimmer { to { background-position: -200% 0; } }
 .swipe-card-scores { position: absolute; z-index: 1; top: 14px; left: 14px; right: 14px; pointer-events: none; }
 .swipe-card-scores .score { pointer-events: auto; }
+.swipe-card-scores.has-rank { right: 64px; }
+/* Op de kaart één regel scores; wat niet past valt weg (IMDb staat vooraan) */
+.swipe-card-scores .scores { flex-wrap: nowrap; overflow: hidden; }
+.swipe-card-scores .score { flex-shrink: 0; }
 .scores.compact .score { padding: 3px 8px; font-size: 0.75rem; background: rgba(5, 8, 7, 0.72); border-color: rgba(255, 255, 255, 0.14); }
 
 /* Totale kijktijd */
@@ -1356,6 +1360,23 @@ img.avatar { object-fit: cover; padding: 0; }
 .push-prompt-close { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; color: var(--muted); }
 .push-prompt:has(.push-prompt-close) .push-prompt-text { padding-right: 18px; }
 .push-prompt.is-on { background: rgba(255, 255, 255, 0.04); border-color: var(--border); }
+
+/* Ranglijsten bij swipen */
+.list-menu {
+  width: min(100%, 460px); display: grid; gap: 4px; padding: 6px; border-radius: 16px; flex-shrink: 0;
+  background: rgba(12, 18, 16, 0.95); border: 1px solid var(--border); box-shadow: var(--shadow); animation: menu-in 0.2s var(--ease-out);
+}
+.list-menu button { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; text-align: left; }
+.list-menu button:hover { background: var(--surface-2); }
+.list-menu button.active { background: rgba(62, 232, 160, 0.12); }
+.list-progress { width: min(100%, 360px); display: grid; gap: 5px; font-size: 0.82rem; color: var(--muted); flex-shrink: 0; }
+.list-progress strong { color: var(--text); }
+.list-progress-bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.list-progress-bar span { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent-2), var(--accent)); transition: width 0.4s var(--ease-out); }
+.rank-badge {
+  position: absolute; z-index: 2; top: 12px; right: 12px; font-family: var(--display); font-size: 1.25rem; line-height: 1; padding: 5px 8px 3px;
+  border-radius: 10px; color: var(--accent-text); background: linear-gradient(120deg, var(--accent), var(--accent-2)); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

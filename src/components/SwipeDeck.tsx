@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { SearchIcon } from './ListView'
-import { BookmarkIcon, CheckMark, CloseIcon, DiceIcon } from './Icons'
+import { BookmarkIcon, CheckMark, CloseIcon, DiceIcon, ListIcon } from './Icons'
 import type { SearchResult } from '../types'
-import { DECK_SOURCES, fetchRandomDeck, hasApiKey, searchTitles, type DeckSource, type Taste } from '../lib/tmdb'
+import { CURATED_LISTS, DECK_SOURCES, fetchCuratedList, fetchRandomDeck, type CuratedList, hasApiKey, searchTitles, type DeckSource, type Taste } from '../lib/tmdb'
 import type { MediaType } from '../types'
 import { titleKey } from '../lib/titles'
 import { CardFace, SwipeCard, type SwipeCardHandle, type SwipeVerdict } from './SwipeCard'
@@ -49,6 +49,10 @@ const MIN_BUFFER = 5
 
 export function SwipeDeck({ seeds, journalKeys, skippedKeys, watchlistKeys, onSwipe, onTopChange }: Props) {
   const [source, setSource] = useState<DeckSource>('random')
+  /** Gekozen ranglijst (bv. IMDb Top 250); null = gewone stapel */
+  const [list, setList] = useState<CuratedList | null>(null)
+  const [listItems, setListItems] = useState<SearchResult[]>([])
+  const [listMenu, setListMenu] = useState(false)
   const [cards, setCards] = useState<SearchResult[]>([])
   /** Hoe vaak achter elkaar er niets nieuws bijkwam; daarna stoppen (lijst op of alles al bekend) */
   const [page, setPage] = useState({ emptyStreak: 0, hasMore: true })
@@ -96,8 +100,18 @@ export function SwipeDeck({ seeds, journalKeys, skippedKeys, watchlistKeys, onSw
   const topCard = visible[0]
   useEffect(() => onTopChange?.(topCard), [topCard, onTopChange])
 
+  const pickList = (next: CuratedList) => {
+    resetDeck()
+    setList(next)
+    setListItems([])
+    setListMenu(false)
+    setQuery('')
+    setActiveQuery('')
+  }
+
   const changeSource = (next: DeckSource) => {
     resetDeck()
+    setList(null)
     setSource(next)
     setQuery('')
     setActiveQuery('')
@@ -110,7 +124,12 @@ export function SwipeDeck({ seeds, journalKeys, skippedKeys, watchlistKeys, onSw
     setLoading(true)
     const request = searching
       ? searchTitles(activeQuery).then((results) => ({ results, hasMore: false }))
-      : fetchRandomDeck(source, usedPages.current, { seeds: seedsRef.current, genres: genres.current }).then((results) => ({ results, hasMore: true }))
+      : list
+        ? fetchCuratedList(list.id).then((results) => {
+            setListItems(results)
+            return { results, hasMore: false }
+          })
+        : fetchRandomDeck(source, usedPages.current, { seeds: seedsRef.current, genres: genres.current }).then((results) => ({ results, hasMore: true }))
     request
       .then(({ results, hasMore }) => {
         if (gen !== generation.current) return // inmiddels andere lijst gekozen
@@ -126,7 +145,7 @@ export function SwipeDeck({ seeds, journalKeys, skippedKeys, watchlistKeys, onSw
       })
       .catch((err) => gen === generation.current && setError((err as Error).message))
       .finally(() => setLoading(false))
-  }, [source, activeQuery, searching, page, visible.length, loading, error, isHidden, journalKeys])
+  }, [source, list, activeQuery, searching, page, visible.length, loading, error, isHidden, journalKeys])
 
   const decide = useCallback(
     (verdict: SwipeVerdict) => {
@@ -185,12 +204,36 @@ export function SwipeDeck({ seeds, journalKeys, skippedKeys, watchlistKeys, onSw
       </div>
 
       <div className="chips">
+        <button className={`chip ${list && !searching ? 'active' : ''}`} onClick={() => setListMenu((m) => !m)} aria-expanded={listMenu}>
+          <ListIcon size={16} />{list ? list.name : 'Lijsten'}
+        </button>
         {DECK_SOURCES.map(([value, label]) => (
-          <button key={value} className={`chip ${!searching && source === value ? 'active' : ''}`} onClick={() => changeSource(value)}>
+          <button key={value} className={`chip ${!searching && !list && source === value ? 'active' : ''}`} onClick={() => changeSource(value)}>
             {value === 'random' && <DiceIcon size={16} />}{label}
           </button>
         ))}
       </div>
+
+      {listMenu && (
+        <div className="list-menu">
+          {CURATED_LISTS.map((l) => (
+            <button key={l.id} className={list?.id === l.id ? 'active' : ''} onClick={() => pickList(l)}>
+              <strong>{l.name}</strong>
+              <span className="muted small">{l.description}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {list && !searching && listItems.length > 0 && (() => {
+        const seen = listItems.filter((i) => journalKeys.has(titleKey(i))).length
+        return (
+          <div className="list-progress">
+            <span><strong>{seen}</strong> van {listItems.length} gezien</span>
+            <span className="list-progress-bar"><span style={{ width: `${(seen / listItems.length) * 100}%` }} /></span>
+          </div>
+        )
+      })()}
 
       <div className="deck">
         <div className="deck-stage">
@@ -204,7 +247,7 @@ export function SwipeDeck({ seeds, journalKeys, skippedKeys, watchlistKeys, onSw
             ) : (
               <p className="muted">
                 {!searching
-                  ? 'Niets nieuws meer gevonden. Kies een andere lijst hierboven.'
+                  ? list ? `Je hebt de hele lijst "${list.name}" gehad!` : 'Niets nieuws meer gevonden. Kies een andere lijst hierboven.'
                   : searchHits && searchHits.inJournal > 0
                     ? `Geen nieuwe titels: ${searchHits.inJournal} ${searchHits.inJournal === 1 ? 'resultaat staat' : 'resultaten staan'} al in je lijst.`
                     : `Niets gevonden voor "${activeQuery}".`}

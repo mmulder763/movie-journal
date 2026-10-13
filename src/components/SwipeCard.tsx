@@ -99,7 +99,8 @@ export function CardFace({ card, img = posterUrl(card.posterPath, 'w780'), withS
     <>
       {img ? <img src={img} alt="" draggable={false} /> : <div className="swipe-card-empty"><FilmIcon size={56} /></div>}
       {/* Als overlay bovenin, zodat binnenkomende scores de titel niet laten verspringen */}
-      {withScores && <div className="swipe-card-scores"><Scores item={card} compact /></div>}
+      {withScores && <div className={`swipe-card-scores ${card.rank != null ? 'has-rank' : ''}`}><Scores item={card} compact /></div>}
+      {card.rank != null && <span className="rank-badge">#{card.rank}</span>}
       <div className="swipe-card-info">
         <div className="meta-line">
           <span className={`badge badge-${card.mediaType}`}>{card.mediaType === 'tv' ? 'Serie' : 'Film'}</span>

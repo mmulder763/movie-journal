@@ -63,6 +63,8 @@ export interface SearchResult {
   year?: string
   overview: string
   voteAverage?: number
+  /** Positie in een ranglijst (bv. IMDb Top 250) */
+  rank?: number
   /** TMDB genre-id's (voor de slimme swipe-stapel) */
   genreIds?: number[]
 }
