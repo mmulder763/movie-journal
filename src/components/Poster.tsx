@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FilmIcon } from './Icons'
 import { posterUrl } from '../lib/tmdb'
 
 interface Props {
@@ -22,6 +23,6 @@ export function Poster({ path, title, size = 'w185', className = '' }: Props) {
       onLoad={() => setLoaded(true)}
     />
   ) : (
-    <div className={`poster poster-empty ${className}`} aria-label={title}>🎬</div>
+    <div className={`poster poster-empty ${className}`} aria-label={title}><FilmIcon size={22} /></div>
   )
 }

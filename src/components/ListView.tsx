@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent } from 'react'
+import { CheckMark, CloseIcon, ListIcon } from './Icons'
+import { StarScore } from './StarRating'
 import type { MediaType, TitleSummary } from '../types'
 import { Poster } from './Poster'
 import { StarRating } from './StarRating'
@@ -49,7 +51,7 @@ export function ListView({ titles, onOpen }: Props) {
   if (titles.length === 0) {
     return (
       <section className="list-empty">
-        <span className="list-empty-icon">🎞️</span>
+        <span className="list-empty-icon"><ListIcon size={44} /></span>
         <h3>Je lijst is nog leeg</h3>
         <p className="muted">Voeg via de agenda je eerste film toe, of swipe je filmgeschiedenis bij elkaar.</p>
       </section>
@@ -62,7 +64,7 @@ export function ListView({ titles, onOpen }: Props) {
         <SearchIcon />
         <input type="search" placeholder={`Zoek in ${titles.length} titels…`} value={query} onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
-        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Zoekopdracht wissen">✕</button>}
+        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Zoekopdracht wissen"><CloseIcon size={16} /></button>}
         <SortMenu value={sort} onChange={setSort} />
       </div>
 
@@ -84,7 +86,7 @@ export function ListView({ titles, onOpen }: Props) {
                   <span className="recent-bg" style={{ backgroundImage: `url(${backdropUrl(t.backdropPath) ?? posterUrl(t.posterPath, 'w500')})` }} />
                   <span className="recent-info">
                     <strong>{t.title}</strong>
-                    <span>{t.lastDate && formatShort(t.lastDate)}{t.avgRating != null && ` · ★ ${t.avgRating.toFixed(1)}`}</span>
+                    <span>{t.lastDate && formatShort(t.lastDate)}{t.avgRating != null && <> · <StarScore value={t.avgRating} size={12} /></>}</span>
                   </span>
                 </button>
               </li>
@@ -161,7 +163,7 @@ function SortMenu({ value, onChange }: { value: Sort; onChange: (s: Sort) => voi
             <li key={v}>
               <button role="menuitemradio" aria-checked={v === value} className={v === value ? 'active' : ''}
                 onClick={() => { onChange(v); setOpen(false) }}>
-                {label}{v === value && <span>✓</span>}
+                {label}{v === value && <CheckMark size={16} />}
               </button>
             </li>
           ))}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CheckIcon } from './Icons'
 import { Poster } from './Poster'
 import { StarRating } from './StarRating'
 
@@ -19,7 +20,7 @@ export function QuickRate({ title, posterPath, onSave, onSkip }: Props) {
       <div className="quick-rate-head">
         <Poster path={posterPath} title={title} size="w92" />
         <div>
-          <span className="eyebrow">✓ Gezien</span>
+          <span className="eyebrow with-icon"><CheckIcon size={14} /> Gezien</span>
           <strong>{title}</strong>
         </div>
       </div>

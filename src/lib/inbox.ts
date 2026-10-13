@@ -31,7 +31,6 @@ export type Notification =
   | { kind: 'reaction'; at: string; reaction: Reaction }
   | { kind: 'recommendation'; at: string; recommendation: Recommendation }
 
-export const REACTION_EMOJI = ['🔥', '😍', '😂', '😱', '😴', '👀']
 
 const SEEN_KEY = 'movie-journal:inbox-seen:v1'
 

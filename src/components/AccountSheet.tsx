@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { BellIcon, CameraIcon } from './Icons'
 import { disablePush, enablePush, pushState, type PushState } from '../lib/push'
 import { vapidKey } from '../lib/keys'
 import type { Profile } from '../lib/supabase'
@@ -40,7 +41,7 @@ export function AccountSheet({ me, syncLabel, onClose, onSignOut, onProfileUpdat
         <div className="avatar-edit">
           <button className="avatar-upload" onClick={() => fileInput.current?.click()} disabled={!!busy} aria-label="Profielfoto kiezen">
             <Avatar profile={me} size={96} />
-            <span className="avatar-upload-badge">{busy === 'upload' ? '…' : '📷'}</span>
+            <span className="avatar-upload-badge">{busy === 'upload' ? '…' : <CameraIcon size={16} />}</span>
           </button>
           <input ref={fileInput} type="file" accept="image/*" hidden
             onChange={(e) => {
@@ -86,7 +87,7 @@ const PUSH_TEXT: Record<PushState, string> = {
   on: 'Aan op dit apparaat: je krijgt een melding bij reacties en aanbevelingen.',
   off: 'Krijg een melding als iemand op je reageert of je iets aanraadt.',
   denied: 'Meldingen zijn geblokkeerd. Zet ze aan in de instellingen van je telefoon of browser.',
-  'needs-install': 'Op iPhone werken meldingen alleen als de app op je beginscherm staat: Deel → "Zet op beginscherm", en open hem daarvandaan.',
+  'needs-install': 'Op iPhone werken meldingen alleen als de app op je beginscherm staat: tik op Deel, kies "Zet op beginscherm" en open hem daarvandaan.',
   unsupported: 'Deze browser ondersteunt geen pushmeldingen.',
 }
 
@@ -121,7 +122,7 @@ function PushToggle({ me }: { me: Profile }) {
   return (
     <div className="push-toggle">
       <div>
-        <strong>🔔 Meldingen</strong>
+        <strong className="with-icon"><BellIcon size={18} /> Meldingen</strong>
         <span className="muted small">{PUSH_TEXT[state]}</span>
       </div>
       {(state === 'on' || state === 'off') && (

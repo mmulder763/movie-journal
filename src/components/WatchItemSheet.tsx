@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { BookmarkIcon, CheckIcon, SendIcon } from './Icons'
 import type { WatchItem } from '../types'
 import { Modal } from './Modal'
 import { Poster } from './Poster'
@@ -8,8 +9,8 @@ import { useSocialContext } from '../lib/inbox'
 
 interface PreviewProps {
   item: WatchItem
-  /** Korte status onder het jaartal, bijv. "🔖 Op je watchlist" */
-  status?: string
+  /** Korte status onder het jaartal, bijv. "Op je watchlist" */
+  status?: ReactNode
   onClose: () => void
   /** Actieknoppen naast de poster */
   children: ReactNode
@@ -26,10 +27,10 @@ export function TitlePreviewSheet({ item, status, onClose, children }: PreviewPr
           <div className="title-meta">
             <span className={`badge badge-${item.mediaType}`}>{item.mediaType === 'tv' ? 'Serie' : 'Film'}</span>
             {item.year && <span className="muted">{item.year}</span>}
-            {status && <span className="muted small">{status}</span>}
+            {status && <span className="muted small with-icon">{status}</span>}
             <Scores item={item} />
             {children}
-            {social?.me && <button className="btn-text recommend-btn" onClick={() => social.openRecommend(item)}>📨 Aanraden</button>}
+            {social?.me && <button className="btn-text recommend-btn with-icon" onClick={() => social.openRecommend(item)}><SendIcon size={16} /> Aanraden</button>}
           </div>
         </div>
         <TitleInfo mediaType={item.mediaType} tmdbId={item.tmdbId} title={item.title} />
@@ -48,8 +49,8 @@ interface Props {
 /** Detailscherm voor een watchlist-titel. */
 export function WatchItemSheet({ item, onClose, onSeen, onRemove }: Props) {
   return (
-    <TitlePreviewSheet item={item} status="🔖 Op je watchlist" onClose={onClose}>
-      <button className="btn-primary" onClick={onSeen}>✓ Gezien</button>
+    <TitlePreviewSheet item={item} status={<><BookmarkIcon size={14} /> Op je watchlist</>} onClose={onClose}>
+      <button className="btn-primary with-icon" onClick={onSeen}><CheckIcon size={16} /> Gezien</button>
       <button className="btn-text btn-reset" onClick={onRemove}>Van watchlist halen</button>
     </TitlePreviewSheet>
   )

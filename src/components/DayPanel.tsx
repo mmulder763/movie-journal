@@ -5,6 +5,7 @@ import { backdropUrl, posterUrl } from '../lib/tmdb'
 import { Poster } from './Poster'
 import { StarRating } from './StarRating'
 import { Avatar } from './FriendsView'
+import { ChevronIcon, TicketIcon } from './Icons'
 import type { FriendWatch } from './Calendar'
 import { ReactionSummary } from './Reactions'
 import { useSocialContext } from '../lib/inbox'
@@ -47,7 +48,7 @@ export function DayPanel({ date, entries, onAdd, onEdit, friendWatches = [], onO
                   <strong>{e.title}</strong>
                   <span className="meta-line">
                     <span className={`badge badge-${e.mediaType}`}>{e.mediaType === 'tv' ? 'Serie' : 'Film'}</span>
-                    {e.cinema && <span className="cinema-tag">🎟️ Bios</span>}
+                    {e.cinema && <span className="cinema-tag"><TicketIcon size={12} /> Bios</span>}
                     {e.year && <span className="muted small">{e.year}</span>}
                     {e.season != null && (
                       <span className="muted small">S{e.season}{e.episode != null && `E${e.episode}`}</span>
@@ -77,7 +78,7 @@ export function DayPanel({ date, entries, onAdd, onEdit, friendWatches = [], onO
                     <strong>{w.entry.title}{w.entry.season != null && w.entry.episode != null && <span className="muted"> · S{w.entry.season}E{w.entry.episode}</span>}</strong>
                     {w.entry.rating != null && <StarRating value={w.entry.rating} />}
                   </span>
-                  <span className="friend-chevron" aria-hidden>›</span>
+                  <ChevronIcon className="friend-chevron" size={18} />
                 </button>
               </li>
             ))}

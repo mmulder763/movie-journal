@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { EyeIcon, PlusIcon } from './Icons'
 import type { WatchItem } from '../types'
 import { formatLongDate } from '../lib/dates'
 import { Poster } from './Poster'
@@ -18,11 +19,11 @@ export function DayMenu({ date, count, watchlist, onAdd, onView, onPick }: Props
     <>
       <span className="day-menu-date">{formatLongDate(date).replace(/^./, (c) => c.toUpperCase())}</span>
       <button className="day-menu-action primary" onClick={onAdd}>
-        <span>＋</span> Film of serie toevoegen
+        <PlusIcon size={18} /> Film of serie toevoegen
       </button>
       {count > 0 && (
         <button className="day-menu-action" onClick={onView}>
-          <span>👁</span> Bekijk dag <em>{count}</em>
+          <EyeIcon size={18} /> Bekijk dag <em>{count}</em>
         </button>
       )}
       {watchlist.length > 0 && (

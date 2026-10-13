@@ -1,4 +1,7 @@
 import { useMemo, useState, type CSSProperties } from 'react'
+import type { ReactNode } from 'react'
+import { StarScore } from './StarRating'
+import { CheckIcon } from './Icons'
 import type { Entry, WatchItem } from '../types'
 import { tasteMatch, type Friend } from '../lib/social'
 import { compareDatesDesc, summarizeTitles, titleKey } from '../lib/titles'
@@ -77,7 +80,7 @@ export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, kn
           <div><strong>{movies}</strong><span>films</span></div>
           <div><strong>{titles.length - movies}</strong><span>series</span></div>
           <div><strong>{entries.length}</strong><span>kijkmomenten</span></div>
-          <div><strong>{avg}</strong><span>gem. ★</span></div>
+          <div><strong>{avg}</strong><span>gem. rating</span></div>
         </div>
 
         <div className="match-card">
@@ -94,7 +97,7 @@ export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, kn
           <Strip title="Recent gekeken" items={recent.map((t) => ({ key: t.key, item: asItem(t), sub: t.lastDate ? new Date(`${t.lastDate}T12:00:00`).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : 'ooit' }))} onOpen={setOpen} />
         )}
         {favorites.length > 0 && (
-          <Strip title="Favorieten ★★★★★" items={favorites.map((t) => ({ key: t.key, item: asItem(t), sub: `★ ${t.avgRating!.toFixed(1)}` }))} onOpen={setOpen} />
+          <Strip title="Favorieten" items={favorites.map((t) => ({ key: t.key, item: asItem(t), sub: <StarScore value={t.avgRating!} /> }))} onOpen={setOpen} />
         )}
 
         <div className="segmented profile-tabs">
@@ -112,8 +115,8 @@ export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, kn
                 <button className="wall-item" onClick={() => setOpen(item)}>
                   <div className="wall-poster">
                     <Poster path={item.posterPath} title={item.title} size="w342" />
-                    {rating != null && <span className="wall-rating">★ {rating.toFixed(1)}</span>}
-                    {mine.has(key) && <span className="wall-count" title="Jij zag dit ook">✓ jij</span>}
+                    {rating != null && <span className="wall-rating"><StarScore value={rating} /></span>}
+                    {mine.has(key) && <span className="wall-count" title="Jij zag dit ook"><CheckIcon size={12} /> jij</span>}
                     {(providers[key] ?? []).length > 0 && (
                       <span className="wall-providers">
                         {providers[key].slice(0, 3).map((p) => <img key={p.name} src={logoUrl(p.logoPath)} alt={p.name} title={p.name} />)}
@@ -138,7 +141,7 @@ export function FriendProfile({ friend, myEntries, onClose, onAddToWatchlist, kn
 }
 
 /** Horizontale strook met brede backdrop-kaarten */
-function Strip({ title, items, onOpen }: { title: string; items: { key: string; item: WatchItem; sub: string }[]; onOpen: (item: WatchItem) => void }) {
+function Strip({ title, items, onOpen }: { title: string; items: { key: string; item: WatchItem; sub: ReactNode }[]; onOpen: (item: WatchItem) => void }) {
   return (
     <div className="recent-strip">
       <h4 className="section-label">{title}</h4>

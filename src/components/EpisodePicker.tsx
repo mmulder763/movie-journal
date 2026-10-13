@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { CheckIcon, CheckMark } from './Icons'
 import type { Entry } from '../types'
 import { fetchSeasonEpisodes, fetchSeasons, type EpisodeInfo, type SeasonInfo } from '../lib/tmdb'
 import { today } from '../lib/dates'
@@ -133,14 +134,14 @@ export function EpisodePicker({ tvId, history, value, onChange, multiple }: Prop
                 <li key={ep.number} style={{ '--i': Math.min(i, 12) } as CSSProperties}>
                   <button type="button" className={`episode ${selected ? 'selected' : ''} ${seenDate !== undefined ? 'seen' : ''}`}
                     onClick={() => toggle(ep.number)} disabled={upcoming} aria-pressed={selected}>
-                    <span className="episode-check" aria-hidden>{selected ? '✓' : ''}</span>
+                    <span className="episode-check" aria-hidden>{selected && <CheckMark />}</span>
                     <span className="episode-num">E{ep.number}</span>
                     <span className="episode-name">{ep.name}</span>
                     <span className="episode-meta">
                       {upcoming
                         ? `vanaf ${shortDate(ep.airDate!)}`
                         : seenDate !== undefined
-                          ? `✓ ${seenDate ? shortDate(seenDate) : 'gezien'}`
+                          ? <><CheckMark /> {seenDate ? shortDate(seenDate) : 'gezien'}</>
                           : ep.runtime ? `${ep.runtime}m` : ''}
                     </span>
                   </button>
@@ -172,7 +173,7 @@ export function SeasonProgress({ tvId, history }: { tvId: number; history: Entry
 
   return (
     <div className="season-progress">
-      {wholeSeries && <span className="muted small">✓ Hele serie gezien</span>}
+      {wholeSeries && <span className="muted small with-icon"><CheckIcon size={14} /> Hele serie gezien</span>}
       {regular.map((s, i) => {
         const done = wholeSeries || fullSeasons.has(s.number) ? s.episodeCount : Math.min(seenIn(s.number), s.episodeCount)
         return (

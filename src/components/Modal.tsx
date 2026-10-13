@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react'
+import { CloseIcon } from './Icons'
 import { createPortal } from 'react-dom'
 import { backdropUrl } from '../lib/tmdb'
 
@@ -43,7 +44,7 @@ export function Modal({ title, onClose, children, backdrop, full = false }: Prop
         {bg && <div className="modal-hero" style={{ backgroundImage: `url(${bg})` }} />}
         <header className="modal-header">
           <h3>{title}</h3>
-          <button className="icon-btn" onClick={onClose} aria-label="Sluiten">✕</button>
+          <button className="icon-btn" onClick={onClose} aria-label="Sluiten"><CloseIcon size={18} /></button>
         </header>
         {children}
       </div>

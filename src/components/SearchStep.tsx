@@ -1,4 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { CloseIcon, PlusIcon } from './Icons'
+import { StarScore } from './StarRating'
 import type { SearchResult, WatchItem } from '../types'
 import { fetchTrending, hasApiKey, searchTitles } from '../lib/tmdb'
 import { Poster } from './Poster'
@@ -65,7 +67,7 @@ export function SearchStep({ onPick, watchlist = [] }: Props) {
         <SearchIcon />
         <input type="search" autoFocus enterKeyHint="search" placeholder="Zoek een film of serie…" value={query}
           onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && query && (e.stopPropagation(), setQuery(''))} />
-        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Wissen">✕</button>}
+        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Wissen"><CloseIcon size={16} /></button>}
       </div>
 
       <div className="search-body">
@@ -93,11 +95,11 @@ export function SearchStep({ onPick, watchlist = [] }: Props) {
                     <span className="meta-line">
                       <span className={`badge badge-${r.mediaType}`}>{r.mediaType === 'tv' ? 'Serie' : 'Film'}</span>
                       {r.year && <span className="muted small">{r.year}</span>}
-                      {r.voteAverage != null && r.voteAverage > 0 && <span className="tmdb-score">★ {r.voteAverage.toFixed(1)}</span>}
+                      {r.voteAverage != null && r.voteAverage > 0 && <span className="tmdb-score"><StarScore value={r.voteAverage} size={12} /></span>}
                     </span>
                     {r.overview && <span className="result-overview">{r.overview}</span>}
                   </div>
-                  <span className="result-add" aria-hidden>＋</span>
+                  <span className="result-add" aria-hidden><PlusIcon size={18} /></span>
                 </button>
               </li>
             ))}

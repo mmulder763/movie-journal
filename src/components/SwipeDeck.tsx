@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { SearchIcon } from './ListView'
+import { BookmarkIcon, CheckMark, CloseIcon, DiceIcon } from './Icons'
 import type { SearchResult } from '../types'
 import { DECK_SOURCES, fetchRandomDeck, hasApiKey, searchTitles, type DeckSource, type Taste } from '../lib/tmdb'
 import type { MediaType } from '../types'
@@ -170,7 +172,8 @@ export function SwipeDeck({ seeds, journalKeys, skippedKeys, watchlistKeys, onSw
         </p>
       </div>
 
-      <div className="swipe-search">
+      <div className="list-search swipe-search">
+        <SearchIcon />
         <input
           type="search"
           placeholder="Zoek een film of serie die je nog weet…"
@@ -178,13 +181,13 @@ export function SwipeDeck({ seeds, journalKeys, skippedKeys, watchlistKeys, onSw
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Escape' && setQuery('')}
         />
-        {query && <button className="swipe-search-clear" onClick={() => setQuery('')} aria-label="Zoekopdracht wissen">✕</button>}
+        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Zoekopdracht wissen"><CloseIcon size={16} /></button>}
       </div>
 
       <div className="chips">
         {DECK_SOURCES.map(([value, label]) => (
           <button key={value} className={`chip ${!searching && source === value ? 'active' : ''}`} onClick={() => changeSource(value)}>
-            {label}
+            {value === 'random' && <DiceIcon size={16} />}{label}
           </button>
         ))}
       </div>
@@ -228,10 +231,10 @@ export function SwipeDeck({ seeds, journalKeys, skippedKeys, watchlistKeys, onSw
       </div>
 
       <div className="swipe-actions">
-        <button className="round-btn skip" onClick={() => top.current?.fly('skip')} disabled={!visible.length} aria-label="Niet gezien">✕</button>
+        <button className="round-btn skip" onClick={() => top.current?.fly('skip')} disabled={!visible.length} aria-label="Niet gezien"><CloseIcon size={30} strokeWidth={2.4} /></button>
         <button className="round-btn watch" onClick={() => top.current?.fly('watchlist')} disabled={!visible.length}
-          aria-label="Op de watchlist" title="Wil ik nog zien">🔖</button>
-        <button className="round-btn seen" onClick={() => top.current?.fly('seen')} disabled={!visible.length} aria-label="Gezien">✓</button>
+          aria-label="Op de watchlist" title="Wil ik nog zien"><BookmarkIcon size={24} /></button>
+        <button className="round-btn seen" onClick={() => top.current?.fly('seen')} disabled={!visible.length} aria-label="Gezien"><CheckMark size={32} strokeWidth={2.6} /></button>
       </div>
     </section>
   )

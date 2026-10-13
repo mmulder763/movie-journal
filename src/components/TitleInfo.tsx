@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { ExternalIcon } from './Icons'
 import type { MediaType } from '../types'
 import { fetchTitleDetails, logoUrl, profileUrl, type TitleDetails } from '../lib/tmdb'
 import { formatLongDate } from '../lib/dates'
@@ -125,7 +126,7 @@ export function TitleInfo({ mediaType, tmdbId, title }: Props) {
           <div className="providers">
             {details.streaming.map((p) => (
               <a key={p.name} className="provider" href={providerLink(p.name, title)} target="_blank" rel="noreferrer" title={`Open ${p.name}`}>
-                <img src={logoUrl(p.logoPath)} alt="" />{p.name}<span className="provider-go">↗</span>
+                <img src={logoUrl(p.logoPath)} alt="" />{p.name}<ExternalIcon className="provider-go" size={13} />
               </a>
             ))}
           </div>
@@ -135,7 +136,7 @@ export function TitleInfo({ mediaType, tmdbId, title }: Props) {
               <div className="providers">
                 {details.rentBuy.slice(0, 6).map((p) => (
                   <a key={p.name} className="provider rent" href={providerLink(p.name, title)} target="_blank" rel="noreferrer" title={`Open ${p.name}`}>
-                    <img src={logoUrl(p.logoPath)} alt="" />{p.name}<span className="provider-go">↗</span>
+                    <img src={logoUrl(p.logoPath)} alt="" />{p.name}<ExternalIcon className="provider-go" size={13} />
                   </a>
                 ))}
               </div>

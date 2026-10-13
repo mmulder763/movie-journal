@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { BookmarkIcon, CheckIcon, CloseIcon, DiceIcon, PlusIcon } from './Icons'
 import type { SearchResult, WatchItem } from '../types'
 import { logoUrl, searchTitles, type Provider } from '../lib/tmdb'
 import { titleKey } from '../lib/titles'
@@ -42,7 +43,7 @@ export function WatchlistView({ items, seenKeys, onAdd, onOpen }: Props) {
 
       {items.length === 0 ? (
         <div className="list-empty">
-          <span className="list-empty-icon">🔖</span>
+          <span className="list-empty-icon"><BookmarkIcon size={44} /></span>
           <h3>Nog niets op je watchlist</h3>
           <p className="muted">Zoek hierboven een titel, veeg bij het swipen omhoog, of pak iets van een vriend.</p>
         </div>
@@ -50,8 +51,8 @@ export function WatchlistView({ items, seenKeys, onAdd, onOpen }: Props) {
         <>
           <div className="watchlist-bar">
             <span className="muted small">{visible.length} {visible.length === 1 ? 'titel' : 'titels'}</span>
-            <button className="btn-primary" onClick={() => setPicking(true)} disabled={visible.length === 0}>
-              🎲 Wat kijk ik vanavond?
+            <button className="btn-primary with-icon" onClick={() => setPicking(true)} disabled={visible.length === 0}>
+              <DiceIcon size={18} /> Wat kijk ik vanavond?
             </button>
           </div>
 
@@ -132,7 +133,7 @@ function WatchlistSearch({ watchKeys, seenKeys, onAdd }: { watchKeys: Set<string
         <SearchIcon />
         <input type="search" placeholder="Zet een film of serie op je watchlist…" value={query}
           onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setQuery('')} />
-        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Wissen">✕</button>}
+        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Wissen"><CloseIcon size={16} /></button>}
       </div>
       {results.length > 0 && (
         <ul className="search-dropdown">
@@ -148,8 +149,8 @@ function WatchlistSearch({ watchKeys, seenKeys, onAdd }: { watchKeys: Set<string
                     {r.mediaType === 'tv' ? 'Serie' : 'Film'}{r.year && ` · ${r.year}`}{seenKeys.has(key) && ' · al gezien'}
                   </span>
                 </div>
-                <button className={onList ? 'btn-ghost' : 'btn-primary'} disabled={onList} onClick={() => onAdd(r)}>
-                  {onList ? '✓ Op lijst' : '+ Watchlist'}
+                <button className={`with-icon ${onList ? 'btn-ghost' : 'btn-primary'}`} disabled={onList} onClick={() => onAdd(r)}>
+                  {onList ? <><CheckIcon size={14} /> Op lijst</> : <><PlusIcon size={14} /> Watchlist</>}
                 </button>
               </li>
             )
@@ -191,7 +192,7 @@ function RandomPick({ items, onClose, onOpen }: { items: WatchItem[]; onClose: (
         </div>
         <h3>{done ? item.title : ' '}</h3>
         <div className="random-actions">
-          <button className="btn-ghost" onClick={() => setRound((r) => r + 1)} disabled={!done}>🎲 Nog een keer</button>
+          <button className="btn-ghost with-icon" onClick={() => setRound((r) => r + 1)} disabled={!done}><DiceIcon size={16} /> Nog een keer</button>
           <button className="btn-primary" onClick={() => onOpen(item)} disabled={!done}>Bekijk</button>
         </div>
       </div>

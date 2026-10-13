@@ -66,7 +66,7 @@ export async function searchTitles(query: string, signal?: AbortSignal): Promise
 export type DeckSource = 'random' | 'movie' | 'tv' | 'popular' | 'top'
 
 export const DECK_SOURCES: [DeckSource, string][] = [
-  ['random', '🎲 Alles'],
+  ['random', 'Alles'],
   ['movie', 'Films'],
   ['tv', 'Series'],
   ['popular', 'Populair'],

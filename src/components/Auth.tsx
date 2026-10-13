@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react'
+import { BackIcon, BookmarkIcon, CalendarIcon, SwipeIcon, UsersIcon } from './Icons'
+import { Star } from './StarRating'
 import { supabase } from '../lib/supabase'
 
 type Mode = 'login' | 'signup' | 'forgot'
@@ -56,11 +58,11 @@ export function Auth({ inviteFrom }: { inviteFrom?: string | null }) {
         )}
         {mode === 'signup' && (
           <ul className="auth-features">
-            <li><span>📅</span>Agenda van wat je op welke dag zag, per film of aflevering</li>
-            <li><span>⭐</span>Ratings, notities en IMDb/Rotten Tomatoes-scores</li>
-            <li><span>🔥</span>Swipe je filmgeschiedenis bij elkaar</li>
-            <li><span>🔖</span>Watchlist met waar je het kunt streamen</li>
-            <li><span>👀</span>Zie wat vrienden kijken en jullie smaakmatch</li>
+            <li><CalendarIcon size={20} />Agenda van wat je op welke dag zag, per film of aflevering</li>
+            <li><Star size={20} />Ratings, notities en IMDb/Rotten Tomatoes-scores</li>
+            <li><SwipeIcon size={20} />Swipe je filmgeschiedenis bij elkaar</li>
+            <li><BookmarkIcon size={20} />Watchlist met waar je het kunt streamen</li>
+            <li><UsersIcon size={20} />Zie wat vrienden kijken en jullie smaakmatch</li>
           </ul>
         )}
 
@@ -100,7 +102,7 @@ export function Auth({ inviteFrom }: { inviteFrom?: string | null }) {
           {state.busy ? 'Even geduld…' : mode === 'login' ? 'Inloggen' : mode === 'forgot' ? 'Stuur resetlink' : 'Account maken'}
         </button>
         {mode === 'login' && <button type="button" className="btn-text" onClick={() => { setMode('forgot'); setState({ busy: false }) }}>Wachtwoord vergeten?</button>}
-        {mode === 'forgot' && <button type="button" className="btn-text" onClick={() => { setMode('login'); setState({ busy: false }) }}>← Terug naar inloggen</button>}
+        {mode === 'forgot' && <button type="button" className="btn-text with-icon" onClick={() => { setMode('login'); setState({ busy: false }) }}><BackIcon size={16} /> Terug naar inloggen</button>}
       </form>
     </div>
   )

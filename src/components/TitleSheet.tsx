@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { CalendarIcon, SendIcon, TicketIcon, TrashIcon } from './Icons'
 import type { Entry, TitleSummary } from '../types'
 import { formatLongDate } from '../lib/dates'
 import { Modal } from './Modal'
@@ -48,7 +49,7 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, o
             )}
             <Scores item={title} />
             {social?.me && (
-              <button className="btn-text recommend-btn" onClick={() => social.openRecommend({ ...title, addedAt: 0 })}>📨 Aanraden</button>
+              <button className="btn-text recommend-btn with-icon" onClick={() => social.openRecommend({ ...title, addedAt: 0 })}><SendIcon size={16} /> Aanraden</button>
             )}
             <button className="btn-primary" onClick={onWatchAgain}>
               {title.mediaType === 'tv' ? '+ Verder gekeken' : '+ Opnieuw gekeken'}
@@ -91,12 +92,12 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, o
 
         <TitleInfo mediaType={title.mediaType} tmdbId={title.tmdbId} title={title.title} />
 
-        <button className="btn-text btn-reset remove-title"
+        <button className="btn-text btn-reset remove-title with-icon"
           onClick={() => {
             const n = title.watches.length
             if (confirm(`"${title.title}" uit je lijst verwijderen?${n > 1 ? ` Alle ${n} kijkmomenten verdwijnen ook uit je agenda.` : ' Hij verdwijnt ook uit je agenda.'}`)) onRemoveAll()
           }}>
-          Verwijderen uit je lijst
+          <TrashIcon size={16} /> Verwijderen uit je lijst
         </button>
 
         <h4 className="section-label">Geschiedenis <span className="muted small">· tik om te bewerken</span></h4>
@@ -105,7 +106,7 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, o
             <li key={w.id} className="history-row" style={{ '--i': i } as CSSProperties}>
               <button className="history-item" onClick={() => onEdit(w)} title="Bewerken">
                 <span className="history-date">
-                  {w.cinema && <span className="cinema-tag">🎟️ Bios</span>}
+                  {w.cinema && <span className="cinema-tag"><TicketIcon size={12} /> Bios</span>}
                   {w.date ? formatLongDate(w.date) : 'Ooit gezien (datum onbekend)'}
                   {w.season != null && <span className="muted"> · S{w.season}{w.episode != null && `E${w.episode}`}</span>}
                 </span>
@@ -114,7 +115,7 @@ export function TitleSheet({ title, onClose, onGoToDate, onEdit, onWatchAgain, o
                 {social?.me && <ReactionBar ownerId={social.me.id} entryId={w.id} readOnly />}
               </button>
               {w.date && (
-                <button className="icon-btn" onClick={() => onGoToDate(w.date!)} aria-label="Naar deze dag in de agenda">📅</button>
+                <button className="icon-btn" onClick={() => onGoToDate(w.date!)} aria-label="Naar deze dag in de agenda"><CalendarIcon size={20} /></button>
               )}
             </li>
           ))}

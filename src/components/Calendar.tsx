@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
+import { BackIcon, ChevronIcon, ShareIcon, TicketIcon } from './Icons'
 import type { Entry } from '../types'
 import { WEEKDAYS, formatMonth, monthGrid, toISODate, today } from '../lib/dates'
 import { Poster } from './Poster'
@@ -91,15 +92,15 @@ export function Calendar({ year, month, entriesByDate, selected, onSelect, onMon
   return (
     <section className="calendar" ref={root}>
       <header className="calendar-header">
-        <button className="icon-btn" onClick={() => onMonthChange(-1)} aria-label="Vorige maand">‹</button>
+        <button className="icon-btn" onClick={() => onMonthChange(-1)} aria-label="Vorige maand"><BackIcon size={20} /></button>
         <div className="calendar-title" key={monthIndex}>
           <h2>{formatMonth(year, month)}</h2>
           <span className="muted small">{monthCount === 0 ? 'Nog niets gekeken' : `${monthCount}× gekeken`}</span>
         </div>
-        <button className="icon-btn" onClick={() => onMonthChange(1)} aria-label="Volgende maand">›</button>
+        <button className="icon-btn" onClick={() => onMonthChange(1)} aria-label="Volgende maand"><ChevronIcon size={20} /></button>
         <button className="btn-ghost" onClick={onToday}>Vandaag</button>
         {onShare && monthCount > 0 && (
-          <button className="icon-btn share-btn" onClick={onShare} aria-label="Deel deze maand" title="Deel deze maand">↗</button>
+          <button className="icon-btn share-btn" onClick={onShare} aria-label="Deel deze maand" title="Deel deze maand"><ShareIcon size={20} /></button>
         )}
       </header>
 
@@ -144,7 +145,7 @@ export function Calendar({ year, month, entriesByDate, selected, onSelect, onMon
               )}
               <span className="day-number">{day.getDate()}</span>
               {dayEntries.length > 1 && <span className="day-count">+{dayEntries.length - 1}</span>}
-              {mode === 'mine' && dayEntries.some((e) => e.cinema) && <span className="day-cinema" aria-label="Bioscoop">🎟️</span>}
+              {mode === 'mine' && dayEntries.some((e) => e.cinema) && <span className="day-cinema" aria-label="Bioscoop"><TicketIcon size={13} /></span>}
               {people.some((p) => p !== 'me') && (
                 <span className={`day-people ${mode === 'mine' ? 'dots' : ''}`} aria-label="Vrienden keken op deze dag">
                   {people.filter((p): p is Friend => p !== 'me').slice(0, mode === 'mine' ? 2 : 3).map((f) => (

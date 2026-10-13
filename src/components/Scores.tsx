@@ -1,4 +1,5 @@
 import type { MediaType } from '../types'
+import { FreshIcon, RottenIcon } from './Icons'
 import { useRatings } from '../lib/ratings'
 
 interface Props {
@@ -37,7 +38,7 @@ export function Scores({ item, compact = false }: Props) {
       )}
       {r.rottenTomatoes && (
         <span className="score" title="Rotten Tomatoes (Tomatometer)">
-          <span className="score-label">{rtFresh ? '🍅' : '🤢'}</span>
+          <span className="score-label">{rtFresh ? <FreshIcon size={15} /> : <RottenIcon size={15} />}</span>
           <strong>{r.rottenTomatoes}</strong>
         </span>
       )}

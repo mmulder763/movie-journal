@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CheckMark } from './Icons'
 import type { WatchItem } from '../types'
 import type { Profile } from '../lib/supabase'
 import { Modal } from './Modal'
@@ -55,7 +56,7 @@ export function RecommendSheet({ item, friends, onSend, onClose }: Props) {
                   <button className={selected.has(f.id) ? 'selected' : ''} onClick={() => toggle(f.id)} aria-pressed={selected.has(f.id)}>
                     <Avatar profile={f} size={44} />
                     <span>{f.display_name.split(' ')[0]}</span>
-                    <span className="recommend-check" aria-hidden>{selected.has(f.id) ? '✓' : ''}</span>
+                    <span className="recommend-check" aria-hidden>{selected.has(f.id) && <CheckMark size={12} strokeWidth={3} />}</span>
                   </button>
                 </li>
               ))}

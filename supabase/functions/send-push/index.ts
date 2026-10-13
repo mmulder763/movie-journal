@@ -8,6 +8,9 @@ webpush.setVapidDetails(Deno.env.get('VAPID_SUBJECT')!, Deno.env.get('VAPID_PUBL
 
 type Row = Record<string, unknown>
 
+// Reacties worden als sleutel opgeslagen; in meldingen tonen we een woord (geen emoji)
+const REACTION_LABEL: Record<string, string> = { '🔥': 'Vuur', '😍': 'Liefde', '😂': 'Lachen', '😱': 'Schrik', '😴': 'Saai', '👀': 'Benieuwd' }
+
 async function firstName(id: string) {
   const { data } = await supabase.from('profiles').select('display_name').eq('id', id).maybeSingle()
   return (data?.display_name as string | undefined)?.split(' ')[0] ?? 'Iemand'
@@ -26,7 +29,7 @@ async function compose(table: string, r: Row): Promise<{ to: string; title: stri
     const [who, title] = await Promise.all([firstName(r.from_id as string), entryTitle(r.owner_id as string, r.entry_id as string)])
     return {
       to: r.owner_id as string,
-      title: r.emoji ? `${who} reageerde ${r.emoji}` : `${who} schreef iets`,
+      title: r.emoji ? `${who} reageerde: ${REACTION_LABEL[r.emoji as string] ?? 'reactie'}` : `${who} schreef iets`,
       body: r.message ? `${title}: “${r.message}”` : `op ${title}`,
       tag: `reaction-${r.entry_id}`,
     }
@@ -35,7 +38,7 @@ async function compose(table: string, r: Row): Promise<{ to: string; title: stri
     const who = await firstName(r.from_id as string)
     return {
       to: r.to_id as string,
-      title: `📨 ${who} raadt je iets aan`,
+      title: `${who} raadt je iets aan`,
       body: r.note ? `${r.title}: “${r.note}”` : (r.title as string),
       tag: `rec-${r.id}`,
     }

@@ -1,4 +1,5 @@
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
+import { CalendarIcon, CheckMark, FilmIcon, TvIcon } from './Icons'
 import type { NextUp, UpcomingItem } from '../lib/upcoming'
 import { backdropUrl, posterUrl } from '../lib/tmdb'
 import { Poster } from './Poster'
@@ -30,9 +31,9 @@ export function ContinueWatching({ items, onLog, onOpen }: { items: NextUp[]; on
                 </span>
               </button>
               {n.airDate ? (
-                <span className="continue-soon">📅 {dayLabel(n.airDate)}</span>
+                <span className="continue-soon"><CalendarIcon size={14} /> {dayLabel(n.airDate)}</span>
               ) : (
-                <button className="continue-check" onClick={() => onLog(n)} aria-label={`S${n.season}E${n.episode} gezien`}>✓</button>
+                <button className="continue-check" onClick={() => onLog(n)} aria-label={`S${n.season}E${n.episode} gezien`}><CheckMark size={22} /></button>
               )}
             </div>
           </li>
@@ -42,10 +43,10 @@ export function ContinueWatching({ items, onLog, onOpen }: { items: NextUp[]; on
   )
 }
 
-const KIND_LABEL: Record<UpcomingItem['kind'], (u: UpcomingItem) => string> = {
-  cinema: () => '🎬 In de bioscoop',
-  season: (u) => `📺 Seizoen ${u.season}`,
-  episode: (u) => `📺 S${u.season}E${u.episode}`,
+const KIND_LABEL: Record<UpcomingItem['kind'], (u: UpcomingItem) => ReactNode> = {
+  cinema: () => <><FilmIcon size={14} /> In de bioscoop</>,
+  season: (u) => <><TvIcon size={14} /> Seizoen {u.season}</>,
+  episode: (u) => <><TvIcon size={14} /> S{u.season}E{u.episode}</>,
 }
 
 /** "Binnenkort": releases van je watchlist en nieuwe afleveringen van series die je volgt. */
@@ -61,7 +62,7 @@ export function UpcomingStrip({ items, onOpen }: { items: UpcomingItem[]; onOpen
               <span className="upcoming-date">{dayLabel(u.date)}</span>
               <Poster path={u.item.posterPath} title={u.item.title} size="w185" />
               <span className="upcoming-title">{u.item.title}</span>
-              <span className="muted small">{KIND_LABEL[u.kind](u)}</span>
+              <span className="muted small with-icon">{KIND_LABEL[u.kind](u)}</span>
             </button>
           </li>
         ))}

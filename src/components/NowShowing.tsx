@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react'
+import { CalendarIcon, ChevronIcon } from './Icons'
 import type { Entry, MediaType, TitleSummary } from '../types'
 import type { Friend } from '../lib/social'
 import { backdropUrl, posterUrl } from '../lib/tmdb'
@@ -156,14 +157,14 @@ export function NowShowing({ titles, friends, onOpenSlide, onAdd, onSlideChange 
                 <span className="eyebrow">Jij keek dit</span>
               )}
             </span>
-            {current.date && <span className="marquee-when">📅 {whenLabel(current.date)}</span>}
+            {current.date && <span className="marquee-when"><CalendarIcon size={15} /> {whenLabel(current.date)}</span>}
             <h2 className="marquee-title">{current.title}</h2>
             <div className="meta-line">
               <span className={`badge badge-${current.mediaType}`}>{current.mediaType === 'tv' ? 'Serie' : 'Film'}</span>
               {current.year && <span className="muted small">{current.year}</span>}
               {current.rating != null && <StarRating value={current.rating} />}
             </div>
-            <span className="marquee-hint">Tik voor details ›</span>
+            <span className="marquee-hint with-icon">Tik voor details <ChevronIcon size={15} /></span>
           </>
         ) : (
           <>

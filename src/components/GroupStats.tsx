@@ -1,4 +1,5 @@
-import { useMemo, type CSSProperties } from 'react'
+import { useMemo, type CSSProperties, type ReactNode } from 'react'
+import { StarScore } from './StarRating'
 import type { Entry, WatchItem } from '../types'
 import type { Profile } from '../lib/supabase'
 import type { Friend } from '../lib/social'
@@ -90,7 +91,7 @@ export function GroupStats({ me, myEntries, friends, period, onOpenTitle }: Prop
               <Avatar profile={r.profile} size={34} />
               <span className="group-name">
                 <strong>{r.isMe ? 'Jij' : r.profile.display_name}</strong>
-                <span className="muted small">{r.movies} films · {r.series} series{r.rating != null && ` · ★ ${r.rating.toFixed(1)}`}</span>
+                <span className="muted small">{r.movies} films · {r.series} series{r.rating != null && <> · <StarScore value={r.rating} size={11} /></>}</span>
               </span>
               <span className="bar-track group-bar"><span className="bar-fill" style={{ width: `${(r.count / max) * 100}%`, background: r.isMe ? '#1aa58f' : '#8a6cf0' }} /></span>
               <span className="bar-value">{r.count}</span>
@@ -113,14 +114,14 @@ export function GroupStats({ me, myEntries, friends, period, onOpenTitle }: Prop
         {topRated.length === 0 ? (
           <p className="muted small">Nog geen ratings{period !== 'all' && ` in ${period}`}.</p>
         ) : (
-          <TitleRow items={topRated.map((t) => ({ ...t, sub: `★ ${t.score.toFixed(1)} · ${t.ratings.length}×` }))} onOpen={onOpenTitle} />
+          <TitleRow items={topRated.map((t) => ({ ...t, sub: <><StarScore value={t.score} size={11} /> · {t.ratings.length}×</> }))} onOpen={onOpenTitle} />
         )}
       </article>
     </>
   )
 }
 
-function TitleRow({ items, onOpen }: { items: { item: WatchItem; viewers: Profile[]; sub: string }[]; onOpen: (item: WatchItem) => void }) {
+function TitleRow({ items, onOpen }: { items: { item: WatchItem; viewers: Profile[]; sub: ReactNode }[]; onOpen: (item: WatchItem) => void }) {
   return (
     <ul className="group-titles">
       {items.map(({ item, viewers, sub }, i) => (

@@ -1,4 +1,6 @@
 import { useImperativeHandle, useRef, type PointerEvent, type Ref } from 'react'
+import { FilmIcon } from './Icons'
+import { StarScore } from './StarRating'
 import type { SearchResult } from '../types'
 import { posterUrl } from '../lib/tmdb'
 import { Scores } from './Scores'
@@ -95,7 +97,7 @@ export function SwipeCard({ card, onDecide, ref }: Props) {
 export function CardFace({ card, img = posterUrl(card.posterPath, 'w780'), withScores = false }: { card: SearchResult; img?: string | null; withScores?: boolean }) {
   return (
     <>
-      {img ? <img src={img} alt="" draggable={false} /> : <div className="swipe-card-empty">🎬</div>}
+      {img ? <img src={img} alt="" draggable={false} /> : <div className="swipe-card-empty"><FilmIcon size={56} /></div>}
       {/* Als overlay bovenin, zodat binnenkomende scores de titel niet laten verspringen */}
       {withScores && <div className="swipe-card-scores"><Scores item={card} compact /></div>}
       <div className="swipe-card-info">
@@ -103,7 +105,7 @@ export function CardFace({ card, img = posterUrl(card.posterPath, 'w780'), withS
           <span className={`badge badge-${card.mediaType}`}>{card.mediaType === 'tv' ? 'Serie' : 'Film'}</span>
           {card.year && <span className="muted small">{card.year}</span>}
           {card.voteAverage != null && card.voteAverage > 0 && (
-            <span className="tmdb-score">★ {card.voteAverage.toFixed(1)}</span>
+            <span className="tmdb-score"><StarScore value={card.voteAverage} size={12} /></span>
           )}
         </div>
         <h3>{card.title}</h3>

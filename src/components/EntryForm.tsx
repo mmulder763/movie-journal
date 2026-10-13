@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { BackIcon, TicketIcon } from './Icons'
 import type { Entry } from '../types'
 import { Poster } from './Poster'
 import { StarRating } from './StarRating'
@@ -72,7 +73,7 @@ export function EntryForm({ entry, isNew, history = [], onSave, onDelete, onBack
           </span>
           {locked && entry.date && (
             <span className="locked-meta">
-              {entry.cinema && <span className="cinema-tag">🎟️ Bios</span>}
+              {entry.cinema && <span className="cinema-tag"><TicketIcon size={12} /> Bios</span>}
               {formatLongDate(entry.date).replace(/^./, (c) => c.toUpperCase())}
               {entry.season != null && ` · S${entry.season}${entry.episode != null ? `E${entry.episode}` : ''}`}
             </span>
@@ -113,7 +114,7 @@ export function EntryForm({ entry, isNew, history = [], onSave, onDelete, onBack
       </label>
 
       <div className="form-actions">
-        {isNew && onBack && <button type="button" className="btn-text" onClick={onBack}>← Terug</button>}
+        {isNew && onBack && <button type="button" className="btn-text with-icon" onClick={onBack}><BackIcon size={16} /> Terug</button>}
         {!isNew && (
           <button type="button" className="btn-danger"
             onClick={() => confirm(`"${draft.title}" verwijderen?`) && onDelete(draft.id)}>

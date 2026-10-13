@@ -1,4 +1,5 @@
 import type { WatchItem } from '../types'
+import { BookmarkIcon, CheckIcon, ChevronIcon } from './Icons'
 import type { Friend } from '../lib/social'
 import { titleKey } from '../lib/titles'
 import { TitlePreviewSheet } from './WatchItemSheet'
@@ -33,13 +34,13 @@ export function FriendTitleSheet({ item, friend, mySeen, knownKeys, onAddToWatch
       {avg != null && <StarRating value={avg} />}
       {note && <p className="entry-note">“{note}”</p>}
       {mySeen.has(key) ? (
-        <span className="muted small">✓ Jij zag dit ook</span>
+        <span className="muted small with-icon"><CheckIcon size={14} /> Jij zag dit ook</span>
       ) : (
-        <button className="btn-primary" disabled={knownKeys.has(key)} onClick={() => onAddToWatchlist(item)}>
-          {knownKeys.has(key) ? '✓ Op je watchlist' : '🔖 Mijn watchlist'}
+        <button className="btn-primary with-icon" disabled={knownKeys.has(key)} onClick={() => onAddToWatchlist(item)}>
+          {knownKeys.has(key) ? <><CheckIcon size={16} /> Op je watchlist</> : <><BookmarkIcon size={16} /> Mijn watchlist</>}
         </button>
       )}
-      {onOpenFriend && <button className="btn-text" onClick={onOpenFriend}>Profiel van {first} ›</button>}
+      {onOpenFriend && <button className="btn-text with-icon" onClick={onOpenFriend}>Profiel van {first} <ChevronIcon size={15} /></button>}
       {watches[0] && <ReactionBar ownerId={friend.id} entryId={[...watches].sort((a, b) => b.createdAt - a.createdAt)[0].id} />}
     </TitlePreviewSheet>
   )

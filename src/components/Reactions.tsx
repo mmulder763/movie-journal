@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { REACTION_EMOJI, useSocialContext, type Reaction } from '../lib/inbox'
+import { useSocialContext, type Reaction } from '../lib/inbox'
+import { ChatIcon, CloseIcon, PlusIcon, REACTIONS, reactionFor } from './Icons'
 import { Avatar } from './FriendsView'
 
 interface Props {
@@ -38,26 +39,32 @@ export function ReactionBar({ ownerId, entryId, readOnly = false }: Props) {
           const mine = rs.some((r) => r.from_id === me.id)
           const names = rs.map((r) => people.get(r.from_id)?.display_name ?? '?').join(', ')
           // Alleen-lezen staat soms in een knop: dan geen geneste <button>
+          const reaction = reactionFor(emoji)
+          if (!reaction) return null
+          const label = `${reaction.label}: ${names}`
           return readOnly ? (
-            <span key={emoji} className="reaction-chip" title={names}>{emoji} <span>{rs.length}</span></span>
+            <span key={emoji} className="reaction-chip" title={label}><reaction.Icon size={16} /> <span>{rs.length}</span></span>
           ) : (
-            <button key={emoji} className={`reaction-chip ${mine ? 'mine' : ''}`} title={names}
+            <button key={emoji} className={`reaction-chip ${mine ? 'mine' : ''}`} title={label} aria-label={label}
               onClick={() => inbox.react(ownerId, entryId, { emoji })}>
-              {emoji} <span>{rs.length}</span>
+              <reaction.Icon size={16} /> <span>{rs.length}</span>
             </button>
           )
         })}
         {!readOnly && (
           <>
-            <button className="reaction-add" onClick={() => { setPicking((p) => !p); setWriting(false) }} aria-label="Reageer met emoji">☺︎＋</button>
-            <button className="reaction-add" onClick={() => { setWriting((w) => !w); setPicking(false) }} aria-label="Schrijf een berichtje">💬</button>
+            <button className="reaction-add" onClick={() => { setPicking((p) => !p); setWriting(false) }} aria-label="Reageren"><PlusIcon size={15} /></button>
+            <button className="reaction-add" onClick={() => { setWriting((w) => !w); setPicking(false) }} aria-label="Schrijf een berichtje"><ChatIcon size={16} /></button>
           </>
         )}
       </div>
       {picking && (
         <div className="emoji-picker">
-          {REACTION_EMOJI.map((e) => (
-            <button key={e} onClick={() => { void inbox.react(ownerId, entryId, { emoji: e }); setPicking(false) }}>{e}</button>
+          {REACTIONS.map((r) => (
+            <button key={r.key} title={r.label} aria-label={r.label}
+              onClick={() => { void inbox.react(ownerId, entryId, { emoji: r.key }); setPicking(false) }}>
+              <r.Icon size={24} />
+            </button>
           ))}
         </div>
       )}
@@ -69,7 +76,7 @@ export function ReactionBar({ ownerId, entryId, readOnly = false }: Props) {
               <li key={r.id}>
                 {who && <Avatar profile={who} size={20} />}
                 <span><strong>{who?.id === me.id ? 'Jij' : who?.display_name.split(' ')[0] ?? '?'}</strong> {r.message}</span>
-                {!readOnly && r.from_id === me.id && <button className="reaction-del" onClick={() => inbox.removeReaction(r.id)} aria-label="Verwijderen">✕</button>}
+                {!readOnly && r.from_id === me.id && <button className="reaction-del" onClick={() => inbox.removeReaction(r.id)} aria-label="Verwijderen"><CloseIcon size={12} /></button>}
               </li>
             )
           })}
@@ -85,19 +92,22 @@ export function ReactionBar({ ownerId, entryId, readOnly = false }: Props) {
   )
 }
 
-/** Compacte samenvatting voor op een kaartje: "🔥2 😂1 💬1" */
+/** Compacte samenvatting voor op een kaartje: reactie-iconen met aantallen */
 export function ReactionSummary({ ownerId, entryId }: { ownerId: string; entryId: string }) {
   const ctx = useSocialContext()
   const list = ctx?.inbox.byEntry.get(`${ownerId}:${entryId}`) ?? []
   if (list.length === 0) return null
   const counts = new Map<string, number>()
   for (const r of list) {
-    const k = r.emoji ?? '💬'
+    const k = r.emoji ?? 'message'
     counts.set(k, (counts.get(k) ?? 0) + 1)
   }
   return (
     <span className="reaction-summary">
-      {[...counts].map(([k, n]) => <span key={k}>{k}{n > 1 && n}</span>)}
+      {[...counts].map(([k, n]) => {
+        const Icon = reactionFor(k)?.Icon ?? ChatIcon
+        return <span key={k}><Icon size={14} />{n > 1 && n}</span>
+      })}
     </span>
   )
 }

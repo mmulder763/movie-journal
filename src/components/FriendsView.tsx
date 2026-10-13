@@ -1,4 +1,8 @@
 import { useEffect, useMemo, type CSSProperties } from 'react'
+import type { ComponentType } from 'react'
+import type { IconProps } from './Icons'
+import { StarScore } from './StarRating'
+import { ChevronIcon, LinkIcon, UsersIcon } from './Icons'
 import type { Entry } from '../types'
 import type { Profile } from '../lib/supabase'
 import { tasteMatch, type Friend, type SocialState } from '../lib/social'
@@ -15,7 +19,7 @@ interface Props {
   onOpenFriend: (friend: Friend) => void
   /** Tik op een item in de feed: details van die titel, vanuit die vriend */
   onOpenTitle: (entry: Entry, friend: Friend) => void
-  notify: (text: string) => void
+  notify: (text: string, Icon?: ComponentType<IconProps>) => void
   /** Aanbevelingen voor jou van vrienden */
   received?: Recommendation[]
   onOpenRecommendation?: (r: Recommendation) => void
@@ -23,14 +27,14 @@ interface Props {
 
 /** Uitnodigingstekst bij delen (de link zelf gaat er los bij) */
 const inviteText = (name: string) =>
-  `🎬 ${name.split(' ')[0]} nodigt je uit voor Movie Journal!
+  `${name.split(' ')[0]} nodigt je uit voor Movie Journal!
 
 Een dagboek voor alles wat je kijkt:
-📅 Een agenda met welke film of aflevering je op welke dag zag
-⭐ Ratings en notities, plus IMDb- en Rotten Tomatoes-scores
-🔥 Swipe je filmgeschiedenis bij elkaar (gezien / niet gezien / watchlist)
-🔖 Een watchlist met waar je het in Nederland kunt streamen
-👀 Zie wat vrienden kijken en hoe goed jullie smaak matcht
+– Een agenda met welke film of aflevering je op welke dag zag
+– Ratings en notities, plus IMDb- en Rotten Tomatoes-scores
+– Swipe je filmgeschiedenis bij elkaar (gezien / niet gezien / watchlist)
+– Een watchlist met waar je het in Nederland kunt streamen
+– Zie wat vrienden kijken en hoe goed jullie smaak matcht
 
 Gratis, werkt op je telefoon als app. Maak een account:`
 
@@ -49,14 +53,17 @@ export function Avatar({ profile, size = 40 }: { profile: Profile; size?: number
   )
 }
 
-/** Korte samenvatting van iemands journal: "12 films · 5 series · ★ 4.1" */
+/** Korte samenvatting van iemands journal: "12 films · 5 series · ster 4.1" */
 export function journalSummary(entries: Entry[]) {
   const titles = summarizeTitles(entries)
   const movies = titles.filter((t) => t.mediaType === 'movie').length
   const ratings = entries.flatMap((e) => (e.rating ? [e.rating] : []))
-  const parts = [`${movies} ${movies === 1 ? 'film' : 'films'}`, `${titles.length - movies} series`]
-  if (ratings.length) parts.push(`★ ${(ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)}`)
-  return parts.join(' · ')
+  return (
+    <>
+      {movies} {movies === 1 ? 'film' : 'films'} · {titles.length - movies} series
+      {ratings.length > 0 && <> · <StarScore value={ratings.reduce((a, b) => a + b, 0) / ratings.length} size={11} /></>}
+    </>
+  )
 }
 
 const DAY = 86_400_000
@@ -90,7 +97,7 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, 
       if (navigator.share) await navigator.share({ title: 'Movie Journal', text: inviteText(me.display_name), url: inviteLink })
       else {
         await navigator.clipboard.writeText(`${inviteText(me.display_name)}\n\n${inviteLink}`)
-        notify('🔗 Uitnodiging gekopieerd')
+        notify('Uitnodiging gekopieerd', LinkIcon)
       }
     } catch { /* delen geannuleerd */ }
   }
@@ -126,7 +133,7 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, 
           <strong>{me.display_name}</strong>
           <span className="muted small">{journalSummary(myEntries)}</span>
         </div>
-        <button className="btn-ghost" onClick={share}>🔗 Nodig uit</button>
+        <button className="btn-ghost with-icon" onClick={share}><LinkIcon size={16} /> Nodig uit</button>
       </div>
 
       {received.length > 0 && (
@@ -155,9 +162,9 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, 
           <p className="muted small">Laden…</p>
         ) : friends.length === 0 ? (
           <div className="list-empty">
-            <span className="list-empty-icon">👋</span>
+            <span className="list-empty-icon"><UsersIcon size={44} /></span>
             <h3>Nog niemand anders</h3>
-            <p className="muted">Deel de app via 🔗 Nodig uit. Iedereen met een account verschijnt hier vanzelf.</p>
+            <p className="muted">Deel de app via Nodig uit. Iedereen met een account verschijnt hier vanzelf.</p>
           </div>
         ) : (
           <ul className="friend-list">
@@ -172,7 +179,7 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, 
                   <span className="friend-match" title="Smaakmatch op basis van titels die jullie allebei een rating gaven">
                     {match.score != null ? `${match.score}%` : `${match.shared} samen`}
                   </span>
-                  <span className="friend-chevron" aria-hidden>›</span>
+                  <ChevronIcon className="friend-chevron" size={18} />
                 </button>
               </li>
             ))}
@@ -201,7 +208,7 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, 
                         </span>
                         {entry.note && <span className="entry-note">“{entry.note}”</span>}
                       </span>
-                      <span className="friend-chevron" aria-hidden>›</span>
+                      <ChevronIcon className="friend-chevron" size={18} />
                     </button>
                     <ReactionBar ownerId={friend.id} entryId={entry.id} />
                   </li>

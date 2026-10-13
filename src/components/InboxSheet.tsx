@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { BellIcon, reactionFor } from './Icons'
 import type { Entry } from '../types'
 import type { Notification, Recommendation } from '../lib/inbox'
 import type { Profile } from '../lib/supabase'
@@ -31,7 +32,7 @@ export function InboxSheet({ notifications, seenAt, people, myEntries, onOpenRec
     <Modal title="Meldingen" onClose={onClose}>
       {notifications.length === 0 ? (
         <div className="list-empty">
-          <span className="list-empty-icon">🔔</span>
+          <span className="list-empty-icon"><BellIcon size={44} /></span>
           <h3>Nog geen meldingen</h3>
           <p className="muted">Hier zie je reacties op wat je keek, en titels die vrienden je aanraden.</p>
         </div>
@@ -49,7 +50,7 @@ export function InboxSheet({ notifications, seenAt, people, myEntries, onOpenRec
                   <button className={`inbox-item ${unread ? 'unread' : ''}`} onClick={() => onOpenRecommendation(r)}>
                     {who && <Avatar profile={who} size={36} />}
                     <span className="inbox-text">
-                      <span><strong>{name}</strong> raadt je <strong>{r.title}</strong> aan{r.dismissed ? '' : ' 📨'}</span>
+                      <span><strong>{name}</strong> raadt je <strong>{r.title}</strong> aan</span>
                       {r.note && <span className="entry-note">“{r.note}”</span>}
                       <span className="muted small">{ago(n.at)}</span>
                     </span>
@@ -66,7 +67,7 @@ export function InboxSheet({ notifications, seenAt, people, myEntries, onOpenRec
                   {who && <Avatar profile={who} size={36} />}
                   <span className="inbox-text">
                     <span>
-                      <strong>{name}</strong> {r.emoji ? <>reageerde {r.emoji} op</> : 'schreef bij'} <strong>{entry?.title ?? 'een kijkmoment'}</strong>
+                      <strong>{name}</strong> {r.emoji ? <>reageerde <ReactionIcon emoji={r.emoji} /> op</> : 'schreef bij'} <strong>{entry?.title ?? 'een kijkmoment'}</strong>
                     </span>
                     {r.message && <span className="entry-note">“{r.message}”</span>}
                     <span className="muted small">{ago(n.at)}</span>
@@ -80,4 +81,9 @@ export function InboxSheet({ notifications, seenAt, people, myEntries, onOpenRec
       )}
     </Modal>
   )
+}
+
+function ReactionIcon({ emoji }: { emoji: string }) {
+  const r = reactionFor(emoji)
+  return r ? <r.Icon size={16} className="inline-icon" /> : null
 }

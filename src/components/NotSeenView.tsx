@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { BookmarkIcon, CheckIcon, CheckMark, CloseIcon, UndoIcon } from './Icons'
 import type { MediaType, WatchItem } from '../types'
 import { fetchBasic, hasApiKey } from '../lib/tmdb'
 import { Poster } from './Poster'
@@ -57,7 +58,7 @@ export function NotSeenView({ skipped, items, onSeen, onWatchlist, onRestore }: 
   if (skipped.length === 0) {
     return (
       <div className="list-empty">
-        <span className="list-empty-icon">✕</span>
+        <span className="list-empty-icon"><CloseIcon size={44} /></span>
         <h3>Nog niets weggeswipet</h3>
         <p className="muted">Titels die je bij het swipen naar links veegt (niet gezien), komen hier te staan.</p>
       </div>
@@ -69,9 +70,9 @@ export function NotSeenView({ skipped, items, onSeen, onWatchlist, onRestore }: 
       <div className="list-search">
         <SearchIcon />
         <input type="search" placeholder={`Zoek in ${skipped.length} niet gezien…`} value={query} onChange={(e) => setQuery(e.target.value)} />
-        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Wissen">✕</button>}
+        {query && <button className="list-search-clear" onClick={() => setQuery('')} aria-label="Wissen"><CloseIcon size={16} /></button>}
       </div>
-      <p className="muted small">Toch gezien? Tik op ✓. Met ↺ kan een titel weer in je swipe-stapel verschijnen.</p>
+      <p className="muted small">Toch gezien? Tik op het vinkje. Met de pijl terug kan een titel weer in je swipe-stapel verschijnen.</p>
       <ul className="poster-wall list-wall">
         {list.map((w, i) => (
           <li key={keyOf(w)} className="rise" style={{ '--i': Math.min(i, 24) } as CSSProperties}>
@@ -87,9 +88,9 @@ export function NotSeenView({ skipped, items, onSeen, onWatchlist, onRestore }: 
               <button className="wall-title notseen-title" onClick={() => setOpen(w)}>{w.title}</button>
               <span className="muted small">{w.mediaType === 'tv' ? 'Serie' : 'Film'}{w.year && ` · ${w.year}`}</span>
               <div className="notseen-actions">
-                <button onClick={() => onSeen(w)} title="Toch gezien" aria-label={`${w.title}: toch gezien`}>✓</button>
-                <button onClick={() => onWatchlist(w)} title="Op mijn watchlist" aria-label={`${w.title} op watchlist`}>🔖</button>
-                <button onClick={() => onRestore(keyOf(w))} title="Terug in de swipe-stapel" aria-label={`${w.title} terug in swipe`}>↺</button>
+                <button onClick={() => onSeen(w)} title="Toch gezien" aria-label={`${w.title}: toch gezien`}><CheckMark size={18} /></button>
+                <button onClick={() => onWatchlist(w)} title="Op mijn watchlist" aria-label={`${w.title} op watchlist`}><BookmarkIcon size={17} /></button>
+                <button onClick={() => onRestore(keyOf(w))} title="Terug in de swipe-stapel" aria-label={`${w.title} terug in swipe`}><UndoIcon size={17} /></button>
               </div>
             </div>
           </li>
@@ -97,10 +98,10 @@ export function NotSeenView({ skipped, items, onSeen, onWatchlist, onRestore }: 
       </ul>
 
       {open && (
-        <TitlePreviewSheet item={open} status="✕ Bij swipen als niet gezien gemarkeerd" onClose={() => setOpen(null)}>
-          <button className="btn-primary" onClick={() => { setOpen(null); onSeen(open) }}>✓ Toch gezien</button>
-          <button className="btn-ghost" onClick={() => { setOpen(null); onWatchlist(open) }}>🔖 Op watchlist</button>
-          <button className="btn-text" onClick={() => { setOpen(null); onRestore(keyOf(open)) }}>↺ Terug in swipe</button>
+        <TitlePreviewSheet item={open} status={<><CloseIcon size={14} /> Bij swipen als niet gezien gemarkeerd</>} onClose={() => setOpen(null)}>
+          <button className="btn-primary with-icon" onClick={() => { setOpen(null); onSeen(open) }}><CheckIcon size={16} /> Toch gezien</button>
+          <button className="btn-ghost with-icon" onClick={() => { setOpen(null); onWatchlist(open) }}><BookmarkIcon size={16} /> Op watchlist</button>
+          <button className="btn-text with-icon" onClick={() => { setOpen(null); onRestore(keyOf(open)) }}><UndoIcon size={16} /> Terug in swipe</button>
         </TitlePreviewSheet>
       )}
     </section>

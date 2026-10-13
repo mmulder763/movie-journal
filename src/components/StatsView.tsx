@@ -1,4 +1,5 @@
 import { useMemo, useState, type CSSProperties } from 'react'
+import { ShareIcon } from './Icons'
 import type { Entry } from '../types'
 import { summarizeTitles } from '../lib/titles'
 import { useWatchTime, type WatchTime } from '../lib/watchTime'
@@ -83,7 +84,7 @@ export function StatsView({ entries: myEntries, me, friends = [], onOpenTitle }:
   const usesHalves = ratings.some((r) => r % 1 !== 0)
   const ratingSteps = usesHalves ? [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] : [1, 2, 3, 4, 5]
   const ratingColumns = ratingSteps.map((n) => ({
-    label: usesHalves ? String(n).replace('.', ',') : '★'.repeat(n),
+    label: String(n).replace('.', ','),
     segments: [{ name: 'Keer', value: ratings.filter((r) => r === n).length, color: FILM }],
   }))
 
@@ -137,7 +138,7 @@ export function StatsView({ entries: myEntries, me, friends = [], onOpenTitle }:
           ))}
           <button className={`chip ${activePeriod === 'all' ? 'active' : ''}`} onClick={() => setPeriod('all')}>Alles</button>
         </div>
-        {isMine && <button className="btn-primary" onClick={() => setSharing(true)} disabled={scoped.length === 0}>↗ Deel</button>}
+        {isMine && <button className="btn-primary with-icon" onClick={() => setSharing(true)} disabled={scoped.length === 0}><ShareIcon size={16} /> Deel</button>}
       </div>
 
       {scoped.length === 0 ? (
@@ -154,7 +155,7 @@ export function StatsView({ entries: myEntries, me, friends = [], onOpenTitle }:
             <Tile value={scoped.length} label="Kijkmomenten" />
             <Tile value={movies} label="Films" color={FILM} />
             <Tile value={titles.length - movies} label="Series" color={SERIE} />
-            <Tile value={avgRating} decimals={1} prefix="★ " label="Gem. rating" />
+            <Tile value={avgRating} decimals={1} label="Gem. rating" />
           </div>
 
           <div className="stats-grid">

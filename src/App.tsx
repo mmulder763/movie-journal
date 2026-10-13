@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ComponentType } from 'react'
+import { BellIcon, BookmarkIcon, CalendarIcon, CheckIcon, CloseIcon, SendIcon, TrashIcon, TvIcon, UndoIcon, type IconProps } from './components/Icons'
 import type { Entry } from './types'
 import { useJournal, type SyncStatus } from './lib/storage'
 import { summarizeTitles, titleKey } from './lib/titles'
@@ -102,7 +104,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   /** titleKey → entry-id van de laatste "gezien"-swipe (om de bioscoopdatum aan de juiste entry te hangen) */
   const swipedEntries = useRef(new Map<string, string>())
   const [toast, setToast] = useState<ToastMessage | null>(null)
-  const notify = useCallback((text: string) => setToast({ id: Date.now(), text }), [])
+  const notify = useCallback((text: string, Icon?: ComponentType<IconProps>) => setToast({ id: Date.now(), text, Icon }), [])
   const clearToast = useCallback(() => setToast(null), [])
   const [marqueeTitle, setMarqueeTitle] = useState<MarqueeSlide>()
   const [swipeTop, setSwipeTop] = useState<SearchResult>()
@@ -178,7 +180,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
         type: 'watchlist-add',
         item: { tmdbId: r.tmdbId, mediaType: r.mediaType, title: r.title, posterPath: r.posterPath, backdropPath: r.backdropPath ?? null, year: r.year, addedAt: Date.now() },
       })
-      notify(`🔖 ${r.title} op je watchlist`)
+      notify(`${r.title} op je watchlist`, BookmarkIcon)
     },
     [dispatch, notify],
   )
@@ -211,7 +213,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
       if (skippedKeys.has(titleKey(saved[0]))) dispatch({ type: 'unskip', key: titleKey(saved[0]) })
       if (saved[0].date) goToDate(saved[0].date)
     }
-    if (saved.length > 1) notify(`📺 ${saved.length} afleveringen van ${saved[0].title} opgeslagen`)
+    if (saved.length > 1) notify(`${saved.length} afleveringen van ${saved[0].title} opgeslagen`, TvIcon)
     setDialog(null)
   }
 
@@ -246,9 +248,9 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
         .then((date) => {
           if (swipedEntries.current.get(key) !== entry.id || !date) return
           dispatch({ type: 'patch', id: entry.id, patch: { date } })
-          notify(`📅 ${card.title} geplot op ${formatLongDate(date)}`)
+          notify(`${card.title} geplot op ${formatLongDate(date)}`, CalendarIcon)
         })
-        .catch((err) => notify(`Bioscoopdatum ophalen mislukt: ${(err as Error).message}`))
+        .catch((err) => notify(`Bioscoopdatum ophalen mislukt: ${(err as Error).message}`, CloseIcon))
     },
     [dispatch, notify, skippedKeys, addToWatchlist, leaveWatchlist],
   )
@@ -279,7 +281,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
           <SyncBadge status={status} onRetry={sync} backendLabel={backend.label} />
           {me && (
             <button className="icon-btn bell-btn" onClick={() => { setInboxOpen(true) }} aria-label={`Meldingen${inbox.unread ? ` (${inbox.unread} nieuw)` : ''}`}>
-              🔔{inbox.unread > 0 && <span className="bell-badge">{inbox.unread}</span>}
+              <BellIcon size={22} />{inbox.unread > 0 && <span className="bell-badge">{inbox.unread}</span>}
             </button>
           )}
           {me && (
@@ -301,7 +303,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
               onLog={(n) => {
                 const entry = { ...entryFromResult({ ...n.title, addedAt: 0 }, today()), season: n.season, episode: n.episode }
                 dispatch({ type: 'upsert', entry })
-                notify(`✓ ${n.title.title} S${n.season}E${n.episode} gezien`)
+                notify(`${n.title.title} S${n.season}E${n.episode} gezien`)
               }} />
             <UpcomingStrip items={upcoming}
               onOpen={(u) => (journalKeys.has(titleKey(u.item)) ? setOpenTitle(titleKey(u.item)) : setPreviewItem(u.item))} />
@@ -379,7 +381,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
                 }}
                 onRestore={(key) => {
                   dispatch({ type: 'unskip', key })
-                  notify('↺ Kan weer in je swipe-stapel verschijnen')
+                  notify('Kan weer in je swipe-stapel verschijnen', UndoIcon)
                 }}
               />
             )}
@@ -432,7 +434,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
           }}
           onRemoveAll={() => {
             for (const w of openTitleSummary.watches) dispatch({ type: 'delete', id: w.id })
-            notify(`🗑 ${openTitleSummary.title} verwijderd`)
+            notify(`${openTitleSummary.title} verwijderd`, TrashIcon)
             setOpenTitle(null)
           }}
           onGoToDate={(date) => {
@@ -475,14 +477,14 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
 
       {previewItem && (
         <TitlePreviewSheet item={previewItem} onClose={() => setPreviewItem(null)}
-          status={watchlistKeys.has(titleKey(previewItem)) ? '🔖 Op je watchlist' : undefined}>
+          status={watchlistKeys.has(titleKey(previewItem)) ? <><BookmarkIcon size={14} /> Op je watchlist</> : undefined}>
           {!watchlistKeys.has(titleKey(previewItem)) && (
-            <button className="btn-primary" onClick={() => addToWatchlist(previewItem)}>🔖 Mijn watchlist</button>
+            <button className="btn-primary with-icon" onClick={() => addToWatchlist(previewItem)}><BookmarkIcon size={16} /> Mijn watchlist</button>
           )}
-          <button className="btn-ghost" onClick={() => {
+          <button className="btn-ghost with-icon" onClick={() => {
             setDialog({ initial: entryFromResult(previewItem, today()), isNew: true })
             setPreviewItem(null)
-          }}>✓ Gezien</button>
+          }}><CheckIcon size={16} /> Gezien</button>
         </TitlePreviewSheet>
       )}
 
@@ -490,7 +492,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
         <RecommendSheet item={recommendItem} friends={social.friends} onClose={() => setRecommendItem(null)}
           onSend={async (ids, note) => {
             await inbox.recommend(ids, recommendItem, note)
-            notify(`📨 ${recommendItem.title} aangeraden`)
+            notify(`${recommendItem.title} aangeraden`, SendIcon)
           }} />
       )}
 
@@ -507,17 +509,17 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
         const from = people.get(recPreview.from_id)?.display_name.split(' ')[0] ?? 'Iemand'
         return (
           <TitlePreviewSheet item={item} onClose={() => setRecPreview(null)}
-            status={`📨 Aangeraden door ${from}${recPreview.note ? `: “${recPreview.note}”` : ''}`}>
-            {journalKeys.has(key) ? <span className="muted small">✓ Je zag dit al</span> : (
+            status={<><SendIcon size={14} /> Aangeraden door {from}{recPreview.note ? `: “${recPreview.note}”` : ''}</>}>
+            {journalKeys.has(key) ? <span className="muted small with-icon"><CheckIcon size={14} /> Je zag dit al</span> : (
               <>
-                <button className="btn-primary" disabled={watchlistKeys.has(key)} onClick={() => { addToWatchlist(item); void inbox.dismiss(recPreview.id) }}>
-                  {watchlistKeys.has(key) ? '✓ Op je watchlist' : '🔖 Op watchlist'}
+                <button className="btn-primary with-icon" disabled={watchlistKeys.has(key)} onClick={() => { addToWatchlist(item); void inbox.dismiss(recPreview.id) }}>
+                  {watchlistKeys.has(key) ? <><CheckIcon size={16} /> Op je watchlist</> : <><BookmarkIcon size={16} /> Op watchlist</>}
                 </button>
-                <button className="btn-ghost" onClick={() => {
+                <button className="btn-ghost with-icon" onClick={() => {
                   void inbox.dismiss(recPreview.id)
                   setRecPreview(null)
                   setDialog({ initial: entryFromResult(item, today()), isNew: true })
-                }}>✓ Gezien</button>
+                }}><CheckIcon size={16} /> Gezien</button>
               </>
             )}
             {!recPreview.dismissed && (
