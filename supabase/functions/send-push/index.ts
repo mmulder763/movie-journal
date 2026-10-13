@@ -46,11 +46,28 @@ async function compose(table: string, r: Row): Promise<{ to: string; title: stri
   return null
 }
 
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 Deno.serve(async (req) => {
-  if (req.headers.get('x-push-secret') !== Deno.env.get('PUSH_SECRET')) return new Response('forbidden', { status: 403 })
-  const { table, record } = (await req.json()) as { table: string; record: Row }
-  const msg = await compose(table, record)
-  if (!msg) return new Response('skip')
+  if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
+
+  let msg: { to: string; title: string; body: string; tag: string } | null
+  if (req.headers.get('x-push-secret') === Deno.env.get('PUSH_SECRET')) {
+    // Vanuit de database-trigger
+    const { table, record } = (await req.json()) as { table: string; record: Row }
+    msg = await compose(table, record)
+  } else {
+    // Testmelding vanuit de app: alleen naar jezelf, op basis van je eigen sessie
+    const token = req.headers.get('authorization')?.replace(/^Bearer /i, '')
+    const { data } = token ? await supabase.auth.getUser(token) : { data: { user: null } }
+    if (!data.user) return new Response('forbidden', { status: 403, headers: CORS })
+    msg = { to: data.user.id, title: 'Movie Journal', body: 'Testmelding: meldingen werken op dit apparaat.', tag: 'test' }
+  }
+  if (!msg) return new Response('skip', { headers: CORS })
 
   const { data: subs } = await supabase.from('push_subscriptions').select('endpoint, p256dh, auth').eq('user_id', msg.to)
   const payload = JSON.stringify({ title: msg.title, body: msg.body, tag: msg.tag, url: './' })
@@ -66,5 +83,5 @@ Deno.serve(async (req) => {
       else console.error('push mislukt', status, err)
     }
   }))
-  return Response.json({ sent })
+  return Response.json({ sent, devices: subs?.length ?? 0 }, { headers: CORS })
 })

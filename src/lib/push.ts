@@ -25,16 +25,56 @@ export async function pushState(): Promise<PushState> {
   }
 }
 
+/** Service worker van de app, met een tijdslimiet zodat het aanmelden niet eindeloos blijft hangen */
+async function readyRegistration(): Promise<ServiceWorkerRegistration> {
+  const existing = await navigator.serviceWorker.getRegistration()
+  if (existing?.active) return existing
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('De app is nog niet volledig geladen. Sluit hem helemaal af, open hem opnieuw en probeer het nog eens.')), 8000)),
+  ])
+}
+
 /** Toestemming vragen (moet vanuit een tik) en dit apparaat aanmelden */
 export async function enablePush(me: Profile, vapidPublicKey: string) {
+  // Eerst toestemming vragen, direct vanuit de tik (iOS vereist dat)
   const permission = await Notification.requestPermission()
-  if (permission !== 'granted') throw new Error('Geen toestemming voor meldingen.')
-  const reg = await navigator.serviceWorker.ready
-  const sub = (await reg.pushManager.getSubscription()) ??
-    (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64ToBytes(vapidPublicKey) }))
+  if (permission !== 'granted') throw new Error('Geen toestemming voor meldingen. Zet ze aan bij Instellingen › Meldingen › Movie Journal.')
+  const reg = await readyRegistration()
+  let sub: PushSubscription
+  try {
+    sub = (await reg.pushManager.getSubscription()) ??
+      (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64ToBytes(vapidPublicKey) }))
+  } catch (err) {
+    throw new Error(`Aanmelden bij de pushdienst mislukt: ${(err as Error).message}`)
+  }
   const json = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } }
   const { error } = await supabase.from('push_subscriptions').upsert({ endpoint: json.endpoint, user_id: me.id, p256dh: json.keys.p256dh, auth: json.keys.auth })
+  if (error) throw new Error(`Opslaan mislukt: ${error.message}`)
+}
+
+/** Testmelding naar jezelf (alle apparaten waarop meldingen aan staan) */
+export async function sendTestPush(): Promise<{ sent: number; devices: number }> {
+  const { data, error } = await supabase.functions.invoke('send-push', { body: { test: true } })
   if (error) throw new Error(error.message)
+  return data as { sent: number; devices: number }
+}
+
+/** Korte diagnose, voor als het niet werkt */
+export async function pushDiagnose(): Promise<string> {
+  const parts = [
+    `iOS-app: ${isIOS() ? (isStandalone() ? 'ja' : 'nee (Safari)') : 'n.v.t.'}`,
+    `toestemming: ${'Notification' in window ? Notification.permission : 'n.v.t.'}`,
+  ]
+  try {
+    const reg = await navigator.serviceWorker.getRegistration()
+    parts.push(`service worker: ${reg?.active ? 'actief' : 'niet actief'}`)
+    parts.push(`aangemeld: ${(await reg?.pushManager.getSubscription()) ? 'ja' : 'nee'}`)
+  } catch {
+    parts.push('service worker: niet beschikbaar')
+  }
+  return parts.join(' · ')
 }
 
 export async function disablePush() {

@@ -5,6 +5,7 @@ import { titleKey } from '../lib/titles'
 import { TitlePreviewSheet } from './WatchItemSheet'
 import { StarRating } from './StarRating'
 import { ReactionBar } from './Reactions'
+import { useSocialContext } from '../lib/inbox'
 
 interface Props {
   item: WatchItem
@@ -27,6 +28,7 @@ export function FriendTitleSheet({ item, friend, mySeen, knownKeys, onAddToWatch
   const avg = rated.length ? rated.reduce((n, w) => n + w.rating!, 0) / rated.length : undefined
   const note = watches.find((w) => w.note)?.note
   const first = friend.display_name.split(' ')[0]
+  const social = useSocialContext()
 
   return (
     <TitlePreviewSheet item={item} onClose={onClose}
@@ -36,9 +38,14 @@ export function FriendTitleSheet({ item, friend, mySeen, knownKeys, onAddToWatch
       {mySeen.has(key) ? (
         <span className="muted small with-icon"><CheckIcon size={14} /> Jij zag dit ook</span>
       ) : (
-        <button className="btn-primary with-icon" disabled={knownKeys.has(key)} onClick={() => onAddToWatchlist(item)}>
-          {knownKeys.has(key) ? <><CheckIcon size={16} /> Op je watchlist</> : <><BookmarkIcon size={16} /> Mijn watchlist</>}
-        </button>
+        <>
+          <button className="btn-primary with-icon" onClick={() => social?.markSeen(item)}>
+            <CheckIcon size={16} /> Ik heb dit ook gezien
+          </button>
+          <button className="btn-ghost with-icon" disabled={knownKeys.has(key)} onClick={() => onAddToWatchlist(item)}>
+            {knownKeys.has(key) ? <><CheckIcon size={16} /> Op je watchlist</> : <><BookmarkIcon size={16} /> Mijn watchlist</>}
+          </button>
+        </>
       )}
       {onOpenFriend && <button className="btn-text with-icon" onClick={onOpenFriend}>Profiel van {first} <ChevronIcon size={15} /></button>}
       {watches[0] && <ReactionBar ownerId={friend.id} entryId={[...watches].sort((a, b) => b.createdAt - a.createdAt)[0].id} />}

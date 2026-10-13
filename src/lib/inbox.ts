@@ -161,6 +161,8 @@ export interface SocialContextValue {
   people: Map<string, Profile>
   inbox: Inbox
   openRecommend: (item: WatchItem) => void
+  /** "Die heb ik ook gezien": toevoegformulier openen met deze titel */
+  markSeen: (item: WatchItem) => void
 }
 export const SocialContext = createContext<SocialContextValue | null>(null)
 export const useSocialContext = () => useContext(SocialContext)

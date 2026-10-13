@@ -72,7 +72,14 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
   const [recommendItem, setRecommendItem] = useState<WatchItem | null>(null)
   const [inboxOpen, setInboxOpen] = useState(false)
   const [recPreview, setRecPreview] = useState<Recommendation | null>(null)
-  const socialCtx = useMemo(() => ({ me, people, inbox, openRecommend: setRecommendItem }), [me, people, inbox])
+  const socialCtx = useMemo(() => ({
+    me, people, inbox, openRecommend: setRecommendItem,
+    markSeen: (item: WatchItem) => {
+      // Detailscherm van de vriend dicht; het formulier neemt het over
+      setFriendTitle(null)
+      setDialog({ initial: entryFromResult(item, today()), isNew: true })
+    },
+  }), [me, people, inbox])
   const [openFriend, setOpenFriend] = useState<Friend | null>(null)
   /** Na een "gezien"-swipe: snel beoordelen */
   const [quickRate, setQuickRate] = useState<{ id: string; title: string; posterPath: string | null } | null>(null)

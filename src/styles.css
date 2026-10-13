@@ -1015,7 +1015,10 @@ img.avatar { object-fit: cover; padding: 0; }
 .account-name-row { display: flex; gap: 8px; }
 .push-toggle { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px 14px; padding: 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); }
 .push-toggle > div { display: grid; gap: 3px; }
-.push-toggle .error { grid-column: 1 / -1; margin: 0; }
+.push-toggle .error, .push-info, .push-diag, .push-test { grid-column: 1 / -1; margin: 0; }
+.push-test { justify-self: start; }
+.push-info { color: var(--accent); }
+.push-diag { font-size: 0.7rem; }
 .switch { width: 50px; height: 30px; border-radius: 999px; padding: 3px; background: rgba(255, 255, 255, 0.15); transition: background 0.2s; }
 .switch span { display: block; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4); transition: transform 0.25s var(--spring); }
 .switch.on { background: linear-gradient(120deg, var(--accent), var(--accent-2)); }

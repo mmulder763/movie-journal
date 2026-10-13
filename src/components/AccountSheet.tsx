@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { BellIcon, CameraIcon } from './Icons'
-import { disablePush, enablePush, pushState, type PushState } from '../lib/push'
+import { disablePush, enablePush, pushDiagnose, pushState, sendTestPush, type PushState } from '../lib/push'
 import { vapidKey } from '../lib/keys'
 import type { Profile } from '../lib/supabase'
 import { removeAvatar, updateProfile, uploadAvatar } from '../lib/avatar'
@@ -95,10 +95,32 @@ function PushToggle({ me }: { me: Profile }) {
   const [state, setState] = useState<PushState | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
+  const [diagnose, setDiagnose] = useState('')
+  const refresh = async () => {
+    setState(await pushState())
+    setDiagnose(await pushDiagnose())
+  }
   useEffect(() => {
-    void pushState().then(setState)
+    void refresh()
   }, [])
   if (!state) return null
+
+  const test = async () => {
+    setBusy(true)
+    setError(null)
+    setInfo(null)
+    try {
+      const r = await sendTestPush()
+      setInfo(r.devices === 0
+        ? 'Er staat nog geen apparaat aangemeld. Zet de schakelaar uit en weer aan.'
+        : `Testmelding verstuurd naar ${r.sent} van ${r.devices} apparaat${r.devices === 1 ? '' : 'en'}. Zie je niets? Check Instellingen › Meldingen › Movie Journal.`)
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const toggle = async () => {
     setBusy(true)
@@ -110,10 +132,10 @@ function PushToggle({ me }: { me: Profile }) {
         if (!key) throw new Error('Meldingen zijn nog niet ingesteld op de server.')
         await enablePush(me, key)
       }
-      setState(await pushState())
+      await refresh()
     } catch (err) {
       setError((err as Error).message)
-      setState(await pushState())
+      await refresh()
     } finally {
       setBusy(false)
     }
@@ -130,7 +152,10 @@ function PushToggle({ me }: { me: Profile }) {
           <span />
         </button>
       )}
+      {state === 'on' && <button className="btn-ghost push-test" onClick={test} disabled={busy}>Stuur testmelding</button>}
+      {info && <p className="small push-info">{info}</p>}
       {error && <p className="error small">{error}</p>}
+      {diagnose && <p className="muted push-diag">{diagnose}</p>}
     </div>
   )
 }
