@@ -75,7 +75,10 @@ export function AccountSheet({ me, syncLabel, onClose, onSignOut, onProfileUpdat
         <PushToggle me={me} />
 
         <p className="muted small">
-          Je journal wordt opgeslagen in je account ({syncLabel}). Iedereen met een account in de app kan je kijkgeschiedenis, ratings, notities en watchlist zien.
+          Je journal wordt opgeslagen in je account ({syncLabel}).{' '}
+          {me.is_admin
+            ? 'Als beheerder zie jij iedereen; zij zien alleen jou, niet elkaar.'
+            : 'Je kijkgeschiedenis, ratings, notities en watchlist zijn alleen zichtbaar voor de beheerder van de app.'}
         </p>
         <button className="btn-ghost" onClick={onSignOut}>Uitloggen</button>
       </div>

@@ -217,3 +217,37 @@ drop trigger if exists push_on_reaction on public.reactions;
 create trigger push_on_reaction after insert on public.reactions for each row execute function app_private.notify_push();
 drop trigger if exists push_on_recommendation on public.recommendations;
 create trigger push_on_recommendation after insert on public.recommendations for each row execute function app_private.notify_push();
+
+-- ---------- Zichtbaarheid: de beheerder ziet iedereen, anderen zien alleen zichzelf en de beheerder ----------
+alter table public.profiles add column if not exists is_admin boolean not null default false;
+
+-- Gebruikers mogen alleen naam en foto aanpassen (niet zichzelf beheerder maken)
+revoke update on public.profiles from authenticated;
+grant update (display_name, avatar_url) on public.profiles to authenticated;
+
+create or replace function public.can_see(target uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select target = auth.uid()
+    or exists (select 1 from profiles where id = auth.uid() and is_admin)
+    or exists (select 1 from profiles where id = target and is_admin);
+$$;
+
+drop policy if exists "profiles: lezen als ingelogd" on public.profiles;
+drop policy if exists "profiles: zichtbaar" on public.profiles;
+create policy "profiles: zichtbaar" on public.profiles for select to authenticated using (public.can_see(id));
+
+drop policy if exists "journals: lezen als ingelogd" on public.journals;
+drop policy if exists "journals: zichtbaar" on public.journals;
+create policy "journals: zichtbaar" on public.journals for select to authenticated using (public.can_see(user_id));
+
+drop policy if exists "reactions: lezen als ingelogd" on public.reactions;
+drop policy if exists "reactions: zichtbaar" on public.reactions;
+create policy "reactions: zichtbaar" on public.reactions for select to authenticated
+  using (public.can_see(owner_id) and public.can_see(from_id));
+drop policy if exists "reactions: zelf plaatsen" on public.reactions;
+create policy "reactions: zelf plaatsen" on public.reactions for insert to authenticated
+  with check (from_id = auth.uid() and public.can_see(owner_id));
+
+drop policy if exists "recommendations: sturen" on public.recommendations;
+create policy "recommendations: sturen" on public.recommendations for insert to authenticated
+  with check (from_id = auth.uid() and public.can_see(to_id));

@@ -48,4 +48,4 @@ export async function updateProfile(me: Profile, patch: Partial<Pick<Profile, 'd
   return data as Profile
 }
 
-export const PROFILE_FIELDS = 'id, username, display_name, avatar_url'
+export const PROFILE_FIELDS = 'id, username, display_name, avatar_url, is_admin'

@@ -164,7 +164,7 @@ export function FriendsView({ me, myEntries, social, onOpenFriend, onOpenTitle, 
           <div className="list-empty">
             <span className="list-empty-icon"><UsersIcon size={44} /></span>
             <h3>Nog niemand anders</h3>
-            <p className="muted">Deel de app via Nodig uit. Iedereen met een account verschijnt hier vanzelf.</p>
+            <p className="muted">{me.is_admin ? 'Deel de app via Nodig uit. Iedereen die een account maakt, verschijnt hier vanzelf.' : 'Hier verschijnt de beheerder van de app.'}</p>
           </div>
         ) : (
           <ul className="friend-list">

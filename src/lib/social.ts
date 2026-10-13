@@ -20,7 +20,7 @@ export interface SocialState {
 
 const REFRESH_MS = 60_000
 
-/** Iedereen met een account is elkaars vriend: alle profielen + journals (alleen-lezen). */
+/** Vrienden: alle profielen + journals die je mag zien (de database bepaalt wie dat is, zie can_see). */
 export function useSocial(me: Profile | null): SocialState {
   const [friends, setFriends] = useState<Friend[]>([])
   const [loading, setLoading] = useState(true)

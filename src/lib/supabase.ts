@@ -15,4 +15,6 @@ export interface Profile {
   username: string
   display_name: string
   avatar_url?: string | null
+  /** Beheerder: ziet iedereen; anderen zien alleen zichzelf en de beheerder */
+  is_admin?: boolean
 }
