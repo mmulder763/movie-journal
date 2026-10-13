@@ -4,10 +4,12 @@ import type { Entry } from '../types'
 import type { Notification, Recommendation } from '../lib/inbox'
 import type { Profile } from '../lib/supabase'
 import { Modal } from './Modal'
+import { PushPrompt } from './PushPrompt'
 import { Poster } from './Poster'
 import { Avatar } from './FriendsView'
 
 interface Props {
+  me: Profile
   notifications: Notification[]
   seenAt: string
   people: Map<string, Profile>
@@ -26,10 +28,11 @@ const ago = (iso: string) => {
 }
 
 /** Meldingen: reacties op jouw kijkmomenten en aanbevelingen van vrienden. */
-export function InboxSheet({ notifications, seenAt, people, myEntries, onOpenRecommendation, onOpenMyEntry, onClose }: Props) {
+export function InboxSheet({ me, notifications, seenAt, people, myEntries, onOpenRecommendation, onOpenMyEntry, onClose }: Props) {
   const byId = new Map(myEntries.map((e) => [e.id, e]))
   return (
     <Modal title="Meldingen" onClose={onClose}>
+      <PushPrompt me={me} />
       {notifications.length === 0 ? (
         <div className="list-empty">
           <span className="list-empty-icon"><BellIcon size={44} /></span>

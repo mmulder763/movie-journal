@@ -30,6 +30,7 @@ import { RecommendSheet } from './components/RecommendSheet'
 import { ContinueWatching, UpcomingStrip } from './components/Upcoming'
 import { useContinueWatching, useUpcoming } from './lib/upcoming'
 import { InboxSheet } from './components/InboxSheet'
+import { PushPrompt } from './components/PushPrompt'
 import type { Profile } from './lib/supabase'
 import { StatsView } from './components/StatsView'
 import { ShareDialog } from './components/ShareDialog'
@@ -305,6 +306,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
             <NowShowing titles={titles} friends={social.friends}
               onOpenSlide={(slide) => (slide.friend ? setFriendTitle({ item: { ...slide, addedAt: 0 }, friend: slide.friend }) : setOpenTitle(slide.titleKey))}
               onAdd={() => setDialog({ initial: null, isNew: true })} onSlideChange={setMarqueeTitle} />
+            {me && <PushPrompt me={me} dismissible />}
             <ContinueWatching items={continueWatching}
               onOpen={(n) => setOpenTitle(n.title.key)}
               onLog={(n) => {
@@ -504,7 +506,7 @@ export default function App({ backend, me, invite, onInviteHandled, onSignOut, o
       )}
 
       {inboxOpen && (
-        <InboxSheet notifications={inbox.notifications} seenAt={inbox.seenAt} people={people} myEntries={entries}
+        <InboxSheet me={me!} notifications={inbox.notifications} seenAt={inbox.seenAt} people={people} myEntries={entries}
           onClose={() => { setInboxOpen(false); inbox.markSeen() }}
           onOpenRecommendation={(r) => setRecPreview(r)}
           onOpenMyEntry={(entry) => { setInboxOpen(false); inbox.markSeen(); setOpenTitle(titleKey(entry)) }} />

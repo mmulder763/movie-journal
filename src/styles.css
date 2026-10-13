@@ -1344,6 +1344,19 @@ img.avatar { object-fit: cover; padding: 0; }
 .day-menu-action .icon { width: 20px; }
 .wall-count { display: inline-flex; align-items: center; gap: 3px; }
 
+/* Meldingen aanzetten */
+.push-prompt {
+  position: relative; display: flex; align-items: center; gap: 14px; padding: 14px 16px; margin: 0 0 14px; border-radius: 18px;
+  background: linear-gradient(135deg, rgba(62, 232, 160, 0.14), rgba(139, 108, 255, 0.12)); border: 1px solid rgba(62, 232, 160, 0.3);
+  animation: rise 0.45s var(--ease-out);
+}
+.app > main .push-prompt { margin: 20px 0 0; }
+.push-prompt-text { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.push-prompt .btn-primary { flex-shrink: 0; }
+.push-prompt-close { position: absolute; top: 4px; right: 4px; width: 30px; height: 30px; color: var(--muted); }
+.push-prompt:has(.push-prompt-close) .push-prompt-text { padding-right: 18px; }
+.push-prompt.is-on { background: rgba(255, 255, 255, 0.04); border-color: var(--border); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   body::after { animation: none; }
